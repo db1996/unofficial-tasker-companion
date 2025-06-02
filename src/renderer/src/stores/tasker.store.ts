@@ -36,29 +36,28 @@ export const useTaskerStore = defineStore('tasker', () => {
         }
 
         if (taskerConnected.value) {
-          if (activityStatus.value === TaskerClientActivityStatus.NONE) {
-              ret.text = 'Up to date'
-              ret.text_class = 'text-success'
-              ret.icon = 'check'
-          } else {
-              switch (activityStatus.value) {
-                  case TaskerClientActivityStatus.RETRIEVE:
-                      ret.text = 'Retrieving tasker data'
-                      ret.icon = 'progress-download'
-                      ret.text_class = 'text-warning'
-                      break
-                  case TaskerClientActivityStatus.UPLOAD:
-                      ret.text = 'Uploading tasker data'
-                      ret.icon = 'progress-upload'
-                      ret.text_class = 'text-warning'
-                      break
-                  default:
-                      break
-              }
-          }
+            if (activityStatus.value === TaskerClientActivityStatus.NONE) {
+                ret.text = 'Up to date'
+                ret.text_class = 'text-success'
+                ret.icon = 'check'
+            } else {
+                switch (activityStatus.value) {
+                    case TaskerClientActivityStatus.RETRIEVE:
+                        ret.text = 'Retrieving tasker data'
+                        ret.icon = 'progress-download'
+                        ret.text_class = 'text-warning'
+                        break
+                    case TaskerClientActivityStatus.UPLOAD:
+                        ret.text = 'Uploading tasker data'
+                        ret.icon = 'progress-upload'
+                        ret.text_class = 'text-warning'
+                        break
+                    default:
+                        break
+                }
+            }
         } else {
-
-            ret.text = 'Tasker not connected: ' + (taskerErrorStatus.value)
+            ret.text = 'Tasker not connected: ' + taskerErrorStatus.value
             ret.text_class = 'text-danger'
             ret.icon = 'alert-circle'
 
@@ -175,7 +174,11 @@ export const useTaskerStore = defineStore('tasker', () => {
 
     window.api?.taskerStatusUpdate((status) => {
         taskerConnected.value = status.connected
-        if (status && status.clientActivityStatus !== undefined && status.errorStatus !== undefined) {
+        if (
+            status &&
+            status.clientActivityStatus !== undefined &&
+            status.errorStatus !== undefined
+        ) {
             if (
                 status.clientActivityStatus !== activityStatus.value ||
                 status.errorStatus !== taskerErrorStatus.value

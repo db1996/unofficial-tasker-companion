@@ -32,9 +32,9 @@ export class HomeAssistantClient {
 
         if (this.baseUrl.length === 0 && this.accessToken.length === 0) {
             this.homeAssistantStatus = HomeassistantStatus.NO_URL_AND_TOKEN
-        }else if (this.baseUrl.length === 0) {
+        } else if (this.baseUrl.length === 0) {
             this.homeAssistantStatus = HomeassistantStatus.NO_URL
-        }else if (this.accessToken.length === 0) {
+        } else if (this.accessToken.length === 0) {
             this.homeAssistantStatus = HomeassistantStatus.NO_TOKEN
         }
 

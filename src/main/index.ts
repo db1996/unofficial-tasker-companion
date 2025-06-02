@@ -204,17 +204,17 @@ app.whenReady().then(() => {
         }
     })
 
-  ipcMain.handle('tasker-get-status', async () => {
+    ipcMain.handle('tasker-get-status', async () => {
         if (Settings.taskerDataPromise) {
             // Wait for the tasker data to be loaded before replacing the action
             await Settings.taskerDataPromise
         }
         if (Settings.taskerClient) {
-          return {
-              connected: Settings.taskerClient.isConnected,
-              errorStatus: Settings.taskerClient.error,
-              clientActivityStatus: Settings.taskerClient.taskerclientActivityStatus
-          }
+            return {
+                connected: Settings.taskerClient.isConnected,
+                errorStatus: Settings.taskerClient.error,
+                clientActivityStatus: Settings.taskerClient.taskerclientActivityStatus
+            }
         }
 
         return {
