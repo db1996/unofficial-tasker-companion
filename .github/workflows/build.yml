@@ -35,7 +35,9 @@ jobs:
 
       - name: Install Linux-specific dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: npx electron-builder install-app-deps
+        run: |
+          export ELECTRON_BUILDER_CACHE=$RUNNER_TEMP/electron-builder-cache
+          npx electron-builder install-app-deps
 
       - name: Build app
         run: |
@@ -76,7 +78,6 @@ jobs:
           name: linux-artifacts
           path: |
             dist/*.AppImage
-            dist/*.snap
             dist/*.deb
             dist/linux-unpacked
             dist/*.deb
