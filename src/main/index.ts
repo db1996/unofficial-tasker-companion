@@ -10,6 +10,10 @@ import fs from 'fs'
 import { HomeassistantStatus } from './clients/homeassistant/enums/HomeassistantStatus'
 import { TaskerErrorStatus } from './clients/tasker/enums/taskerStoreError'
 import { TaskerClientActivityStatus } from './clients/tasker/enums/TaskerClientActivityStatus'
+import { HomeAssistantClient } from './clients/homeassistant/HomeAssistantClient'
+import { HomeassistantSettings } from './settings/types/HomeassistantSettings'
+import { GeneralSettings } from './settings/types/GeneralSettings'
+import TaskerClient from './clients/tasker/TaskerClient'
 
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
@@ -262,6 +266,55 @@ app.whenReady().then(() => {
             return await Settings.homeassistantClient.getServicesFront()
         }
         return []
+    })
+
+    ipcMain.handle('homeassistant-force-reload', async () => {
+        if (Settings.homeassistantDataPromise) {
+            // Wait for the homeassistant data to be loaded before replacing the action
+            await Settings.homeassistantDataPromise
+        }
+        if (Settings.homeassistantClient) {
+            await Settings.reloadHomeAssistant()
+            return {
+                services: await Settings.homeassistantClient.getServicesFront(),
+                entities: await Settings.homeassistantClient.getEntities()
+            }
+        }
+        return { services: [], entities: [] }
+    })
+
+    ipcMain.handle(
+        'homeassistant-check-settings',
+        async (_event, homeassistantSettings: HomeassistantSettings) => {
+            const homeassistantClient = new HomeAssistantClient(
+                homeassistantSettings.url,
+                homeassistantSettings.token
+            )
+
+            await homeassistantClient.ping()
+        }
+    )
+
+    ipcMain.handle('tasker-force-reload', async () => {
+        if (Settings.taskerDataPromise) {
+            // Wait for the tasker data to be loaded before replacing the action
+            await Settings.taskerDataPromise
+        }
+        if (Settings.taskerClient) {
+            await Settings.reloadTasker()
+            return {
+                actionSpecs: await Settings.taskerClient.getActions(),
+                categorySpecs: await Settings.taskerClient.getCategorySpecs()
+            }
+        }
+        return []
+    })
+
+    ipcMain.handle('tasker-check-settings', async (_event, taskerSettings: GeneralSettings) => {
+        console.log('tasker-check-settings', taskerSettings);
+
+        const taskerClient = new TaskerClient(taskerSettings.tasker_url)
+        await taskerClient.pingTasker()
     })
 
     ipcMain.handle('save-allsettings', (_event, allSettings: AllSettings) => {

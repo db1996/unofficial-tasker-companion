@@ -37,7 +37,7 @@ export const useSettingsStore = defineStore('settings', () => {
         console.log('Saving settings json', JSON.stringify(newSettings))
 
         await window.api?.saveAllSettings(JSON.parse(JSON.stringify(newSettings)))
-        settings.value = newSettings
+        settings.value = JSON.parse(JSON.stringify(newSettings))
     }
 
     return {

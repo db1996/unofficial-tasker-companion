@@ -9,6 +9,7 @@ import Action from '../../../main/clients/tasker/types/Action'
 import { cloneDeep, forEach } from 'lodash'
 import ActionSpec from '../../../main/clients/tasker/types/specs/ActionSpec'
 import { CategorySpec } from '../../../main/clients/tasker/types/CategorySpec'
+import { GeneralSettings } from '../../../main/settings/types/GeneralSettings'
 
 export const useTaskerStore = defineStore('tasker', () => {
     const manager: ActionTypeManager = new ActionTypeManager()
@@ -30,7 +31,7 @@ export const useTaskerStore = defineStore('tasker', () => {
     const taskerStatus = computed(() => {
         const ret = {
             text: 'Up to date',
-            text_class: 'text-success',
+            text_class: 'success',
             icon: 'check',
             spin: false
         }
@@ -38,31 +39,31 @@ export const useTaskerStore = defineStore('tasker', () => {
         if (taskerConnected.value) {
             if (activityStatus.value === TaskerClientActivityStatus.NONE) {
                 ret.text = 'Up to date'
-                ret.text_class = 'text-success'
+                ret.text_class = 'success'
                 ret.icon = 'check'
             } else {
                 switch (activityStatus.value) {
                     case TaskerClientActivityStatus.RETRIEVE:
                         ret.text = 'Retrieving tasker data'
                         ret.icon = 'progress-download'
-                        ret.text_class = 'text-warning'
+                        ret.text_class = 'warning'
                         break
                     case TaskerClientActivityStatus.UPLOAD:
                         ret.text = 'Uploading tasker data'
                         ret.icon = 'progress-upload'
-                        ret.text_class = 'text-warning'
+                        ret.text_class = 'warning'
                         break
                     default:
                         break
                 }
             }
         } else {
-            ret.text = 'Tasker not connected: ' + taskerErrorStatus.value
-            ret.text_class = 'text-danger'
+            ret.text = taskerErrorStatus.value
+            ret.text_class = 'danger'
             ret.icon = 'alert-circle'
 
             if (taskerErrorStatus.value === TaskerErrorStatus.NONE) {
-                ret.text_class = 'text-secondary'
+                ret.text_class = 'secondary'
                 ret.icon = 'loading'
                 ret.spin = true
             }
@@ -172,6 +173,14 @@ export const useTaskerStore = defineStore('tasker', () => {
         }
     }
 
+    async function checkSettings(settings: GeneralSettings) {
+        try {
+            await window.api?.taskerCheckSettings(settings)
+        } catch (error) {
+            console.error('Error retrieving tasker settings:', error)
+        }
+    }
+
     window.api?.taskerStatusUpdate((status) => {
         taskerConnected.value = status.connected
         if (
@@ -210,7 +219,8 @@ export const useTaskerStore = defineStore('tasker', () => {
         saveLabel,
         deleteAction,
         moveAction,
-        replaceAction
+        replaceAction,
+        checkSettings
     }
 })
 

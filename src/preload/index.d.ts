@@ -3,6 +3,8 @@ import { ActualService } from '@main/clients/homeassistant/types/ActualService'
 import { TaskerClientActivityStatus } from '@main/clients/tasker/enums/TaskerClientActivityStatus'
 import Action from '@main/clients/tasker/types/Action'
 import { AllSettings } from '@main/settings/types/AllSettings'
+import { GeneralSettings } from '@main/settings/types/GeneralSettings'
+import { HomeassistantSettings } from '@main/settings/types/HomeassistantSettings'
 
 declare global {
     interface Window {
@@ -51,6 +53,16 @@ declare global {
             }>
             homeassistantListServicesFront: () => Promise<ActualService[]>
             homeassistantListEntities: () => Promise<HaEntity[]>
+            homeassistantForceReload: () => Promise<{
+                services: ActualService[]
+                entities: HaEntity[]
+            }>
+            homeassistantCheckSettings: (settings: HomeassistantSettings) => Promise<void>
+            taskerForceReload: () => Promise<{
+                actionSpecs: ActionSpec[]
+                categorySpecs: CategorySpec[]
+            }>
+            taskerCheckSettings: (settings: GeneralSettings) => Promise<void>
         }
     }
 }

@@ -12,12 +12,29 @@ import NavTabContent from '../components/NavTab/NavTabContent.vue'
 import NavTabItem from '../components/NavTab/NavTabItem.vue'
 import Checkbox from '../components/form/Checkbox.vue'
 import { useHomeassistantStore } from '../stores/homeassistant.store'
+import { HomeassistantSettings } from '../../../main/settings/types/HomeassistantSettings'
+import { HomeassistantStatus } from '../../../main/clients/homeassistant/enums/HomeassistantStatus'
+import StatusBadge from '../components/StatusBadge.vue'
+import { useTaskerStore } from '../stores/tasker.store'
+import MdiIcon from '../components/MdiIcon.vue'
 
-const saveState = ref('secondary')
+const saveState = ref<'btn-primary' | 'btn-secondary'>('btn-secondary')
 const settingsStore = useSettingsStore()
 const homeAssistantStore = useHomeassistantStore()
+const taskerStore = useTaskerStore()
 
-const form = reactive<AllSettings>({ ...settingsStore.settings })
+const form = reactive<AllSettings>({
+    general: {
+        tasker_url: ''
+    },
+    homeassistant: {
+        active: false,
+        url: '',
+        token: '',
+        replace_url_var: '',
+        replace_token_var: ''
+    }
+})
 
 const schema: yup.Schema<AllSettings> = yup.object({
     general: yup.object({
@@ -33,17 +50,32 @@ const schema: yup.Schema<AllSettings> = yup.object({
 })
 const errors = ref<Record<string, string>>({})
 
-onMounted(async () => {
-    watch(
-        () => settingsStore.settings,
-        (newValue) => {
-            Object.assign(form, newValue)
-        },
-        {
-            deep: true
-        }
-    )
+onMounted(() => {
+    recreateForm()
 })
+
+function recreateForm() {
+    Object.assign(form, JSON.parse(JSON.stringify(settingsStore.settings)) as AllSettings)
+}
+
+watch(
+    () => settingsStore.settings,
+    () => {
+        recreateForm()
+    }
+)
+// when user goes to another page, ask if they want to save changes
+watch(
+    form,
+    (newValue) => {
+        if (JSON.stringify(settingsStore.settings) !== JSON.stringify(newValue)) {
+            saveState.value = 'btn-primary'
+        } else {
+            saveState.value = 'btn-secondary'
+        }
+    },
+    { deep: true }
+)
 
 async function saveSettings() {
     if (!form) {
@@ -69,12 +101,30 @@ async function saveSettings() {
         }
     }
 }
+
+async function checkSettingsHa() {
+    homeAssistantStore.homeAssistantStatus = HomeassistantStatus.BOOTING
+    const settings: HomeassistantSettings = {
+        active: form.homeassistant.active,
+        url: form.homeassistant.url,
+        token: form.homeassistant.token,
+        replace_url_var: form.homeassistant.replace_url_var,
+        replace_token_var: form.homeassistant.replace_token_var
+    }
+    await homeAssistantStore.checkSettings(settings)
+}
+
+async function checkSettingsTasker() {
+    taskerStore.taskerConnected = false
+
+    await taskerStore.checkSettings(JSON.parse(JSON.stringify(form.general)))
+}
 </script>
 
 <template>
     <appLayout title="Settings">
         <template #toolbar>
-            <BaseButton :btn-type="saveState" icon-left="content-save" @click="saveSettings">
+            <BaseButton :btn-class="saveState" icon-left="content-save" @click="saveSettings">
                 Save
             </BaseButton>
         </template>
@@ -90,21 +140,99 @@ async function saveSettings() {
                     <NavTabContent tab-name="settings">
                         <NavTabItem tab="general">
                             <div class="row">
-                                <div class="col-3">
-                                    <h4>Tasker</h4>
+                                <div class="col-7">
+                                    <TextInput
+                                        id="tasker-url"
+                                        v-model="form.general.tasker_url"
+                                        label="Tasker URL"
+                                        describe="Used to connect to your tasker web URL"
+                                    />
                                 </div>
-                                <div class="col-9"></div>
+                                <div class="col-5 d-flex align-items-start justify-content-end">
+                                    <div class="d-flex align-items-center">
+                                        <StatusBadge
+                                            :bg="
+                                                taskerStore.taskerConnected
+                                                    ? 'success'
+                                                    : taskerStore.taskerStatus.text_class
+                                            "
+                                            :status="
+                                                taskerStore.taskerConnected
+                                                    ? 'Connected'
+                                                    : taskerStore.taskerStatus.text
+                                            "
+                                        />
+                                        <BaseButton
+                                            sm
+                                            btn-class="btn-secondary"
+                                            icon-left="reload"
+                                            @click="checkSettingsTasker"
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <TextInput
-                                id="tasker-url"
-                                v-model="form.general.tasker_url"
-                                label="Tasker URL"
-                                describe="Used to connect to your tasker web URL"
-                            />
+
+                            <h4>How do I connect to tasker?</h4>
+                            <p>
+                                In order for this application to connect to your tasker, you need to
+                                set some things up first
+                            </p>
+                            <h5>Make sure you have the new UI enabled in Tasker</h5>
+                            <ul>
+                                <li>Open Tasker</li>
+                                <li>
+                                    Tap on
+                                    <MdiIcon
+                                        v-tooltip
+                                        icon="dots-vertical"
+                                        data-title="3 vertical dots top right"
+                                    />
+                                    in the top right
+                                </li>
+                                <li>Go to preferences</li>
+                                <li>
+                                    In the UI tab, at the bottom of the general section, enable "Use
+                                    Tasker 2025 UI (VERY EARLY)"
+                                </li>
+                            </ul>
+
+                            <h5>Enable the Tasker API and copy the URL</h5>
+                            <ul>
+                                <li>Open Tasker</li>
+                                <li>Open any task</li>
+                                <li>
+                                    Tap on
+                                    <MdiIcon
+                                        v-tooltip
+                                        icon="dots-vertical"
+                                        data-title="3 vertical dots bottom left"
+                                    />
+                                    in the bottom left
+                                </li>
+                                <li>In the Network tab, enable "Enable WebUI"</li>
+                                <li>
+                                    Tap on
+                                    <MdiIcon
+                                        v-tooltip
+                                        icon="link"
+                                        data-title="Link icon next to 'Enable WebUI'"
+                                    />
+                                    next to "Enable WebUI" to copy the URL to your clipboard
+                                </li>
+                                <li>Enter the copied URL in the field above</li>
+                            </ul>
+                            <div class="alert alert-primary">
+                                <strong><MdiIcon icon="information-outline" /> Info</strong>
+                                <br />
+                                The IP address of your device running Tasker may change <br />
+                                If the IP is automatically (or manually) changed, Unofficial Tasker
+                                Companion will not be able to detect it or connect anymore, enter
+                                the new URL in the field again to fix this issue.
+                            </div>
                         </NavTabItem>
                         <NavTabItem tab="homeassistant">
-                            <div class="row">
-                                <div class="col-sm-11">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
                                     <Checkbox
                                         id="ha-active"
                                         v-model:checked="form.homeassistant.active"
@@ -112,20 +240,21 @@ async function saveSettings() {
                                         label="Enable Home Assistant"
                                     />
                                 </div>
-                                <div class="col-sm-1">
-                                    <BaseButton
-                                        v-tooltip
-                                        :btn-class="
-                                            'btn-' +
+                                <div class="d-flex flex-end">
+                                    <StatusBadge
+                                        :bg="
                                             homeAssistantStore.homeassistantStatusProperties
                                                 .text_class
                                         "
-                                        :icon-left="
-                                            homeAssistantStore.homeassistantStatusProperties.icon
-                                        "
-                                        :data-title="
+                                        :status="
                                             homeAssistantStore.homeassistantStatusProperties.text
                                         "
+                                    />
+                                    <BaseButton
+                                        sm
+                                        btn-class="btn-secondary"
+                                        icon-left="reload"
+                                        @click="checkSettingsHa"
                                     />
                                 </div>
                             </div>
@@ -154,6 +283,17 @@ async function saveSettings() {
                                 label="Replace Token Variable"
                                 describe="Text to replace the token with in your HTTP request task, for if you want to use a tasker variable instead"
                             />
+                            <div class="alert alert-primary">
+                                <strong><MdiIcon icon="information-outline" /> Info</strong>
+                                <br />
+                                The Home Assistant plugin allows you to edit/create HTTP Request
+                                actions with full support for all Home Assitant services. It allows
+                                you to choose a service, enter the data and it will automatically
+                                generate the HTTP Request action for you.
+                                <br />
+                                This effectively gives you access to every action you can do in a
+                                Home Assistant script or automation.
+                            </div>
                         </NavTabItem>
                     </NavTabContent>
                 </div>

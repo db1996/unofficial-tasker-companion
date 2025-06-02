@@ -9,6 +9,8 @@ import { CategorySpec } from '../main/clients/tasker/types/CategorySpec'
 import { HaEntity } from '../main/clients/homeassistant/types/HaEntity'
 import { HomeassistantStatus } from '../main/clients/homeassistant/enums/HomeassistantStatus'
 import { ActualService } from '../main/clients/homeassistant/types/ActualService'
+import { HomeassistantSettings } from '../main/settings/types/HomeassistantSettings'
+import { GeneralSettings } from '../main/settings/types/GeneralSettings'
 
 declare global {
     interface Window {
@@ -94,7 +96,21 @@ const api = {
     homeassistantListServicesFront: () =>
         electronAPI.ipcRenderer.invoke('homeassistant-list-services-front') as Promise<
             ActualService[]
-        >
+        >,
+    homeassistantForceReload: () =>
+        electronAPI.ipcRenderer.invoke('homeassistant-force-reload') as Promise<{
+            services: ActualService[]
+            entities: HaEntity[]
+        }>,
+    homeassistantCheckSettings: (settings: HomeassistantSettings) =>
+        electronAPI.ipcRenderer.invoke('homeassistant-check-settings', settings) as Promise<void>,
+    taskerCheckSettings: (settings: GeneralSettings) =>
+        electronAPI.ipcRenderer.invoke('tasker-check-settings', settings) as Promise<void>,
+    taskerForceReload: () =>
+        electronAPI.ipcRenderer.invoke('tasker-force-reload') as Promise<{
+            actionSpecs: ActionSpec[]
+            categorySpecs: CategorySpec[]
+        }>
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

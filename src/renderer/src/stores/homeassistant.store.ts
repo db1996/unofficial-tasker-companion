@@ -4,6 +4,7 @@ import { HomeassistantStatus } from '../../../main/clients/homeassistant/enums/H
 import { HaDomainService } from '../../../main/clients/homeassistant/types/HaDomainService'
 import { HaEntity } from '../../../main/clients/homeassistant/types/HaEntity'
 import { ActualService } from '../../../main/clients/homeassistant/types/ActualService'
+import { HomeassistantSettings } from '../../../main/settings/types/HomeassistantSettings'
 
 export const useHomeassistantStore = defineStore('homeassistant', () => {
     const homeassistantStatus = ref<HomeassistantStatus>(HomeassistantStatus.BOOTING)
@@ -149,6 +150,10 @@ export const useHomeassistantStore = defineStore('homeassistant', () => {
         return
     }
 
+    async function checkSettings(settings: HomeassistantSettings): Promise<void> {
+        await window.api?.homeassistantCheckSettings(settings)
+    }
+
     window.api?.homeassistantStatusUpdate((status) => {
         console.log('Homeassistant status update:', status)
         if (status) {
@@ -172,7 +177,8 @@ export const useHomeassistantStore = defineStore('homeassistant', () => {
         entities,
         servicesFront,
         init,
-        retrieveData
+        retrieveData,
+        checkSettings
     }
 })
 
