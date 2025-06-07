@@ -74,10 +74,14 @@ const editTypes = computed(() => {
     return ret
 })
 
+const isSavingLabel = ref(false)
+
 async function saveLabel() {
+    isSavingLabel.value = true
     const label = document.querySelector('.input-group input') as HTMLInputElement
     await taskerStore.saveLabel(props.modelValue.index, label.value)
     editLabel.value = false
+    isSavingLabel.value = false
 }
 
 async function deleteAction() {
@@ -107,7 +111,7 @@ async function deleteAction() {
                             {{ modelValue.action.label ?? 'No label' }} <MdiIcon icon="pencil" />
                         </div>
 
-                        <div class="input-group">
+                        <div class="input-group" style="height: 30px">
                             <input
                                 v-if="editLabel"
                                 type="text"
@@ -123,7 +127,7 @@ async function deleteAction() {
                                 v-if="editLabel"
                                 btn-class="btn-outline-primary"
                                 icon-left="content-save"
-                                :checkrunning="true"
+                                :loading="isSavingLabel"
                                 @click="saveLabel"
                             />
                         </div>

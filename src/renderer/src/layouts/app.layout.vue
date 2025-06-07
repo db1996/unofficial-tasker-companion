@@ -31,7 +31,7 @@ const props = defineProps({
 <template>
     <header class="navbar bg-dark p-0 shadow" data-bs-theme="dark">
         <a class="navbar-brand me-0 px-3 fs-6 text-white" href="/">
-            <img src="../assets/resources/images/logo.png" alt="Logo" style="width: 50px" />
+            <img src="../assets/resources/images/logo-wide.png" alt="Logo" style="width: 100%" />
         </a>
         <div class="navbar-right">
             <div class="d-flex align-items-center justify-content-end pt-2 pb-2">

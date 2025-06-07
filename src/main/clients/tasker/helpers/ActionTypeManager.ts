@@ -9,8 +9,8 @@ export class ActionTypeManager {
     async loadForms() {
         const formModules = [
             import('./../actionTypes/popup/PopupActionType'),
-            import('./../../homeassistant/actionTypes/HomeassistantAction'),
-            // import('./../actionTypes/HttpRequest/HttpRequestActionType'),
+            // import('./../../homeassistant/actionTypes/HomeassistantAction'),
+            import('./../actionTypes/HttpRequest/HttpRequestActionType'),
             import('./../actionTypes/BaseActionType')
         ]
 

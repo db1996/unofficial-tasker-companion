@@ -20,6 +20,7 @@ declare global {
             deleteTask: (index: number) => Promise<void>
             replaceAction: (index: number, action: Action) => Promise<void>
             moveTask: (fromIndex: number, toIndex: number) => Promise<void>
+            reloadSettings: (callback: () => void) => void
             settingsLoaded: (callback: (settings: AllSettings) => void) => void
             actionSpecsLoaded: (
                 callback: (data: {

@@ -1,35 +1,39 @@
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts" setup>
-import { onMounted, PropType, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import type { HaEntity } from '../../types/HaEntity'
 import MdiIcon from '../../../../../renderer/src/components/MdiIcon.vue'
 import { forEach } from 'lodash'
 import { useHomeassistantStore } from '../../../../../renderer/src/stores/homeassistant.store'
-import HomeassistantAction from '../HomeassistantAction'
-import BaseButton from '../../../../../renderer/src/components/BaseButton.vue'
+import BsModal from '../../../../../renderer/src/components/BsModal.vue'
 
-const emits = defineEmits(['stop'])
+const emits = defineEmits(['stop', 'entity-picked'])
 const homeassistantStore = useHomeassistantStore()
-
-const resultEntities = ref<HaEntity[] | null>(null)
-
 const props = defineProps({
-    modelValue: Object as PropType<HomeassistantAction>
+    domain: {
+        type: String,
+        default: ''
+    }
 })
+const resultEntities = ref<HaEntity[] | null>(null)
 
 const form = {
     search: '',
     domain: ''
 }
 
+const show = ref(false)
+
 watch(
-    () => props.modelValue,
-    () => {
-        resultEntities.value = homeassistantStore.entities
-        recreateFormObject()
-        searchEntities()
+    () => props.domain,
+    (newVal) => {
+        if (newVal) {
+            resultEntities.value = homeassistantStore.entities
+            form.domain = props.domain
+            searchEntities()
+        }
     },
-    { immediate: true, deep: true }
+    { immediate: true }
 )
 
 watch(
@@ -37,26 +41,20 @@ watch(
     () => {
         if (homeassistantStore.entities.length > 0) {
             resultEntities.value = homeassistantStore.entities
-            recreateFormObject()
             searchEntities()
         }
     },
     { immediate: true }
 )
 
-function recreateFormObject() {
-    if (!props.modelValue) return
-
-    form.domain = props.modelValue.currentFormObject['domain'] || ''
-}
-
 onMounted(async () => {
     if (homeassistantStore.isBooting || homeassistantStore.entities.length === 0) {
         return
     }
     resultEntities.value = homeassistantStore.entities
-    recreateFormObject()
     searchEntities()
+    show.value = true
+    console.log(`Mounted PickEntityModal, found ${homeassistantStore.entities.length} entities`)
 })
 
 function getFriendlyName(entity: HaEntity) {
@@ -137,58 +135,57 @@ function searchEntities() {
 }
 
 function pick(entity: HaEntity) {
-    if (!props.modelValue) return
-
-    console.log(`Picking entity: ${entity.entity_id}`, entity)
-
-    props.modelValue.updateFormObject('entity_id', entity.entity_id ?? '')
-    emits('stop')
+    emits('entity-picked', entity.entity_id)
+    nextTick(() => {
+        form.search = ''
+        searchEntities()
+    })
 }
 </script>
 <template>
-    <div class="row">
-        <div class="col-2">
-            <p>Pick an entity</p>
-        </div>
-        <div class="col-9">
-            <div class="input-group mb-3">
-                <input
-                    v-model="form.search"
-                    type="text"
-                    class="form-control"
-                    name="search"
-                    placeholder="Search"
-                    @input="searchEntities"
-                />
-                <span id="basic-addon1" class="input-group-text"><MdiIcon icon="magnify" /></span>
-            </div>
-        </div>
-        <div class="col-1">
-            <BaseButton
-                v-tooltip
-                :btn-class="'btn-secondary'"
-                icon-left="arrow-left"
-                data-title="Go back to edit screen"
-                @click="emits('stop')"
-            />
-        </div>
-    </div>
-    <ul class="list-group">
-        <li
-            v-for="(value, key) in resultEntities"
-            :key="key + '_entity'"
-            class="list-group-item hover-active"
-            @click="() => pick(value)"
-        >
+    <BsModal :show="show" @close="emits('stop')">
+        <template #title>
+            <h5 class="modal-title">Pick an entity</h5>
+        </template>
+        <template #content>
             <div class="row">
-                <div class="col-1">
-                    <MdiIcon :icon="getIcon(value)" />
+                <div class="col-2">
+                    <p>Pick an entity</p>
                 </div>
-                <div class="col-11">
-                    <div class="fw-bold">{{ getFriendlyName(value) }}</div>
-                    {{ value.entity_id?.toString() }}
+                <div class="col-10">
+                    <div class="input-group mb-3">
+                        <input
+                            v-model="form.search"
+                            type="text"
+                            class="form-control"
+                            name="search"
+                            placeholder="Search"
+                            @input="searchEntities"
+                        />
+                        <span id="basic-addon1" class="input-group-text"
+                            ><MdiIcon icon="magnify"
+                        /></span>
+                    </div>
                 </div>
             </div>
-        </li>
-    </ul>
+            <ul class="list-group">
+                <li
+                    v-for="(value, key) in resultEntities"
+                    :key="key + '_entity'"
+                    class="list-group-item hover-active"
+                    @click="() => pick(value)"
+                >
+                    <div class="row">
+                        <div class="col-1">
+                            <MdiIcon :icon="getIcon(value)" />
+                        </div>
+                        <div class="col-11">
+                            <div class="fw-bold">{{ getFriendlyName(value) }}</div>
+                            {{ value.entity_id?.toString() }}
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </template>
+    </BsModal>
 </template>

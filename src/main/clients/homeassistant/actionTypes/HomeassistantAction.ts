@@ -62,7 +62,7 @@ export default class HomeassistantAction extends BaseActionType {
         this.resetBothFormObjects()
     }
 
-  canHandle(): boolean {
+    canHandle(): boolean {
         if (this.action.code === this.tasker_code && this.action.name === this.tasker_name) {
             if (
                 this.params.method_type === MethodType.POST &&

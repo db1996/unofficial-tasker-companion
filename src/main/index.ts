@@ -1,7 +1,7 @@
-import { shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { shell, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { Tray, app, Menu, nativeImage } from 'electron'
+import { app } from 'electron'
 import Settings from './settings/Settings'
 import { AllSettings } from './settings/types/AllSettings'
 import ncp from 'copy-paste'
@@ -15,10 +15,13 @@ import { HomeassistantSettings } from './settings/types/HomeassistantSettings'
 import { GeneralSettings } from './settings/types/GeneralSettings'
 import TaskerClient from './clients/tasker/TaskerClient'
 
-let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
     // Create the browser window.
+    const appIconWhite = nativeImage.createFromPath(
+        join(__dirname, '../../resources/icon-white.png')
+    )
+
     mainWindow = new BrowserWindow({
         // maximize
         width: 968,
@@ -26,6 +29,7 @@ function createWindow(): void {
         show: false,
         autoHideMenuBar: true,
         ...{},
+        icon: appIconWhite,
         webPreferences: {
             preload: join(__dirname, '../preload/index.js'),
             sandbox: false
@@ -44,10 +48,6 @@ function createWindow(): void {
 
     mainWindow.webContents.openDevTools()
 
-    mainWindow.on('minimize', () => {
-        mainWindow?.hide()
-    })
-
     // HMR for renderer base on electron-vite cli.
     // Load the remote URL for development or the local html file for production.
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -55,6 +55,16 @@ function createWindow(): void {
     } else {
         mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
+
+    mainWindow.setThumbarButtons([
+        {
+            tooltip: 'Unofficial Tasker Companion',
+            icon: appIconWhite,
+            click() {
+                console.log('button1 clicked')
+            }
+        }
+    ])
 }
 
 // This method will be called when Electron has finished
@@ -62,28 +72,8 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
     // Set app user model id for windows
-    electronApp.setAppUserModelId('com.electron')
-
-    // create data url
-    const icon = nativeImage.createFromPath(join(__dirname, '../../resources/logo.png'))
+    electronApp.setAppUserModelId('com.unofficial-tasker-companion')
     let savedMyself = false
-    tray = new Tray(icon)
-
-    const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Open',
-            type: 'normal',
-            click: function () {
-                mainWindow?.show()
-            }
-        },
-        { label: 'Item2', type: 'normal' },
-        { label: 'Item3', type: 'normal', checked: true, click: () => console.log('click') },
-        { label: 'Item4', type: 'normal' }
-    ])
-
-    tray.setToolTip('This is my application.')
-    tray.setContextMenu(contextMenu)
 
     // Default open or close DevTools by F12 in development
     // and ignore CommandOrControl + R in production.
@@ -311,7 +301,7 @@ app.whenReady().then(() => {
     })
 
     ipcMain.handle('tasker-check-settings', async (_event, taskerSettings: GeneralSettings) => {
-        console.log('tasker-check-settings', taskerSettings);
+        console.log('tasker-check-settings', taskerSettings)
 
         const taskerClient = new TaskerClient(taskerSettings.tasker_url)
         await taskerClient.pingTasker()

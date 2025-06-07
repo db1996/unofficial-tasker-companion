@@ -16,14 +16,14 @@ export default class PopupActionType extends BaseActionType {
 
     constructor(action: Action) {
         super(action)
-        this.message = this.action.args[1].value.toString()
+        this.message = this.action.args[1]?.value.toString()
 
         this.resetBothFormObjects()
     }
 
     canHandle(): boolean {
         if (this.action.code === this.tasker_code && this.action.name === this.tasker_name) {
-            this.message = this.action.args[1].value.toString()
+            this.message = this.action.args[1]?.value.toString()
             this.description = 'Message: ' + this.message
             return true
         }

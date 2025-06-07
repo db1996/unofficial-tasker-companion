@@ -66,6 +66,8 @@ const api = {
                 }
             ) => callback(data)
         ),
+    reloadSettings: (callback: () => void) =>
+        electronAPI.ipcRenderer.on('reload-settings', () => callback()),
     taskerGetStatus: () =>
         electronAPI.ipcRenderer.invoke('tasker-get-status') as Promise<{
             connected: boolean

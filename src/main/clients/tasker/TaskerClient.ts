@@ -46,14 +46,17 @@ export default class TaskerClient {
             })
         }
         this.isRequesting[key] = true
+        const startTime = Date.now()
         try {
             const result = await fn()
             return result
         } catch (e: unknown) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const err = e as any
+            const elapsed = Date.now() - startTime
             const shouldRetry =
                 retryCount < 3 &&
+                elapsed <= 4000 && // Only retry if request took 4s or less
                 (err?.code === 'ECONNRESET' ||
                     err?.message?.includes('fetch failed') ||
                     err?.message?.includes('network') ||

@@ -25,6 +25,10 @@ watch(
         actionTypeFormComponent.value = null // Reset the form component when the action changes
         if (newValue.length > 0) {
             currentAction.value = newValue[index.value]
+            if (!currentAction.value) {
+                return
+            }
+
             actionTypeFormComponent.value = await currentAction.value.getFormComponent()
         } else {
             currentAction.value = null
@@ -69,7 +73,7 @@ function save() {
                 btn-class="btn-secondary"
                 icon-left="arrow-left"
                 data-title="Back to actions list"
-                @click="$router.push({ name: 'home' })"
+                to="/home"
             />
         </template>
         <template #default>

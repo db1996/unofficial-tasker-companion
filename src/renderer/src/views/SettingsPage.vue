@@ -17,6 +17,7 @@ import { HomeassistantStatus } from '../../../main/clients/homeassistant/enums/H
 import StatusBadge from '../components/StatusBadge.vue'
 import { useTaskerStore } from '../stores/tasker.store'
 import MdiIcon from '../components/MdiIcon.vue'
+import PickEntityModal from '../../../main/clients/homeassistant/actionTypes/_partials/PickEntityModal.vue'
 
 const saveState = ref<'btn-primary' | 'btn-secondary'>('btn-secondary')
 const settingsStore = useSettingsStore()
@@ -32,7 +33,9 @@ const form = reactive<AllSettings>({
         url: '',
         token: '',
         replace_url_var: '',
-        replace_token_var: ''
+        replace_token_var: '',
+        fetch_phone_ip: false,
+        phone_ip_entity_id: ''
     }
 })
 
@@ -45,12 +48,15 @@ const schema: yup.Schema<AllSettings> = yup.object({
         url: yup.string().optional().default(''),
         token: yup.string().optional().default(''),
         replace_url_var: yup.string().optional().default(''),
-        replace_token_var: yup.string().optional().default('')
+        replace_token_var: yup.string().optional().default(''),
+        fetch_phone_ip: yup.boolean().default(false),
+        phone_ip_entity_id: yup.string().optional().default('')
     })
 })
 const errors = ref<Record<string, string>>({})
 
-onMounted(() => {
+onMounted(async () => {
+    await settingsStore.getSettings()
     recreateForm()
 })
 
@@ -109,7 +115,9 @@ async function checkSettingsHa() {
         url: form.homeassistant.url,
         token: form.homeassistant.token,
         replace_url_var: form.homeassistant.replace_url_var,
-        replace_token_var: form.homeassistant.replace_token_var
+        replace_token_var: form.homeassistant.replace_token_var,
+        fetch_phone_ip: form.homeassistant.fetch_phone_ip,
+        phone_ip_entity_id: form.homeassistant.phone_ip_entity_id
     }
     await homeAssistantStore.checkSettings(settings)
 }
@@ -119,6 +127,13 @@ async function checkSettingsTasker() {
 
     await taskerStore.checkSettings(JSON.parse(JSON.stringify(form.general)))
 }
+
+function entityPicked(entityId: string) {
+    form.homeassistant.phone_ip_entity_id = entityId
+    showEntityPicker.value = false
+}
+
+const showEntityPicker = ref(false)
 </script>
 
 <template>
@@ -228,6 +243,10 @@ async function checkSettingsTasker() {
                                 If the IP is automatically (or manually) changed, Unofficial Tasker
                                 Companion will not be able to detect it or connect anymore, enter
                                 the new URL in the field again to fix this issue.
+                                <br />
+                                <br />
+                                With the homeassistant plugin enabled, it is possible to
+                                automatically fetch you phone's IP address
                             </div>
                         </NavTabItem>
                         <NavTabItem tab="homeassistant">
@@ -283,6 +302,37 @@ async function checkSettingsTasker() {
                                 label="Replace Token Variable"
                                 describe="Text to replace the token with in your HTTP request task, for if you want to use a tasker variable instead"
                             />
+                            <br />
+                            <div>
+                                <Checkbox
+                                    id="ha-active"
+                                    v-model:checked="form.homeassistant.fetch_phone_ip"
+                                    switch-type
+                                    label="Automatically fetch phone IP from Home Assistant if tasker can't connect"
+                                />
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-10">
+                                    <TextInput
+                                        id="entity_id"
+                                        v-model="form.homeassistant.phone_ip_entity_id"
+                                        name="entity_id"
+                                        label="Entity ID"
+                                        describe="Entity ID of the phone IP address in Home Assistant, used to fetch the phone's IP address automatically. To enable this, you need to enable the 'WI-FI IP address' sensor in the home assistant companion app."
+                                        required
+                                    />
+                                </div>
+                                <div class="col-sm-2">
+                                    <label class="form-control-label">Pick</label>
+                                    <BaseButton
+                                        :btn-class="'btn-primary'"
+                                        class="w-100"
+                                        @click="showEntityPicker = true"
+                                    >
+                                        <MdiIcon icon="pencil" />
+                                    </BaseButton>
+                                </div>
+                            </div>
                             <div class="alert alert-primary">
                                 <strong><MdiIcon icon="information-outline" /> Info</strong>
                                 <br />
@@ -298,7 +348,11 @@ async function checkSettingsTasker() {
                     </NavTabContent>
                 </div>
             </div>
-            <div></div>
+            <PickEntityModal
+                :show="showEntityPicker"
+                @entity-picked="entityPicked"
+                @stop="showEntityPicker = false"
+            />
         </template>
     </appLayout>
 </template>
