@@ -29,7 +29,9 @@ export default class Settings {
             url: '',
             token: '',
             replace_url_var: '%HASS_server',
-            replace_token_var: '%HASS_access_token'
+            replace_token_var: '%HASS_access_token',
+            fetch_phone_ip: false,
+            phone_ip_entity_id: ''
         }
     }
 
@@ -40,7 +42,7 @@ export default class Settings {
 
     static async reloadTasker() {
         if (!Settings.taskerDataPromise) {
-          Settings.taskerDataPromise = (async () => {
+            Settings.taskerDataPromise = (async () => {
                 if (!Settings.allSettings.general.tasker_url) {
                     // If Tasker URL is not set, do not proceed with loading data
                     console.log('Tasker URL is not set, skipping data load.')
@@ -58,6 +60,37 @@ export default class Settings {
                 if (client.error === TaskerErrorStatus.OK && client.isConnected) {
                     Settings.actionSpecs = await client.getActionSpecs()
                     Settings.categorySpecs = await client.getCategorySpecs()
+                } else {
+                    if (
+                        Settings.homeassistantClient &&
+                        Settings.allSettings.homeassistant.fetch_phone_ip &&
+                        Settings.allSettings.homeassistant.phone_ip_entity_id.length > 0
+                    ) {
+                        if (Settings.homeassistantDataPromise)
+                            await Settings.homeassistantDataPromise
+                        const entities = await Settings.homeassistantClient.getEntities()
+
+                        const phoneIpEntity = entities.find(
+                            (entity) =>
+                                entity.entity_id ===
+                                Settings.allSettings.homeassistant.phone_ip_entity_id
+                        )
+
+                        if (phoneIpEntity && phoneIpEntity.state) {
+                            console.log(
+                                `Using phone IP from Home Assistant: ${phoneIpEntity.state}`
+                            )
+                            if (
+                                Settings.allSettings.general.tasker_url !==
+                                `http://${phoneIpEntity.state}:8745`
+                            ) {
+                                Settings.allSettings.general.tasker_url = `http://${phoneIpEntity.state}:8745`
+                                Settings.saveAllSettings(Settings.allSettings)
+                                Settings.mainWindow?.webContents.send('reload-settings')
+                            }
+                        }
+                    }
+                    console.error('Error connecting to Tasker:', client.error)
                 }
             })().finally(() => {
                 Settings.taskerDataPromise = null
@@ -113,8 +146,8 @@ export default class Settings {
             try {
                 Settings.allSettings = JSON.parse(settings)
                 Settings.mainWindow?.webContents.send('settings-loaded', Settings.allSettings)
-                Settings.reloadTasker()
                 Settings.reloadHomeAssistant()
+                Settings.reloadTasker()
             } catch (error) {
                 console.error('Error parsing settings file', error)
             }

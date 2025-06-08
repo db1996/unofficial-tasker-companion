@@ -3,6 +3,7 @@ import HomeView from '@renderer/views/HomeView.vue'
 import AboutPage from '@renderer/views/AboutPage.vue'
 import SettingsPage from '@renderer/views/SettingsPage.vue'
 import EditPage from '../views/EditPage.vue'
+import AddPage from '../views/AddPage.vue'
 
 const routes: RouteRecordRaw[] = [
     {
@@ -29,6 +30,16 @@ const routes: RouteRecordRaw[] = [
         path: '/edit/:index',
         name: 'edit',
         component: EditPage
+    },
+    {
+        path: '/edit/:index/:plugin',
+        name: 'edit-plugin',
+        component: EditPage
+    },
+    {
+        path: '/add/:code/:plugin?',
+        name: 'add',
+        component: AddPage
     }
 ]
 

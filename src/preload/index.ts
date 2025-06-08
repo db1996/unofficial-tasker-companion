@@ -11,6 +11,7 @@ import { HomeassistantStatus } from '../main/clients/homeassistant/enums/Homeass
 import { ActualService } from '../main/clients/homeassistant/types/ActualService'
 import { HomeassistantSettings } from '../main/settings/types/HomeassistantSettings'
 import { GeneralSettings } from '../main/settings/types/GeneralSettings'
+import { Variable } from '../main/clients/tasker/types/Variable'
 
 declare global {
     interface Window {
@@ -36,6 +37,7 @@ const api = {
     deleteTask: async (index: number) => electronAPI.ipcRenderer.invoke('delete-task', index),
     replaceAction: async (index: number, action: Action) =>
         electronAPI.ipcRenderer.invoke('replace-action', index, action),
+    createAction: async (action: Action) => electronAPI.ipcRenderer.invoke('create-action', action),
     moveTask: async (fromIndex: number, toIndex: number) =>
         electronAPI.ipcRenderer.invoke('move-task', fromIndex, toIndex),
     settingsLoaded: (callback: (arg0: AllSettings) => void) =>
@@ -66,12 +68,16 @@ const api = {
                 }
             ) => callback(data)
         ),
+    reloadSettings: (callback: () => void) =>
+        electronAPI.ipcRenderer.on('reload-settings', () => callback()),
     taskerGetStatus: () =>
         electronAPI.ipcRenderer.invoke('tasker-get-status') as Promise<{
             connected: boolean
             errorStatus: TaskerErrorStatus
             clientActivityStatus: TaskerClientActivityStatus
         }>,
+    taskerListVariables: () =>
+        electronAPI.ipcRenderer.invoke('tasker-list-variables') as Promise<Variable[]>,
     taskerListActions: () =>
         electronAPI.ipcRenderer.invoke('tasker-list-actions') as Promise<Action[]>,
     taskerListActionSpecs: () =>

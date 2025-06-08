@@ -11,11 +11,22 @@ import { ActionTypeSupportedType } from '../../tasker/enums/ActionTypeSupportedT
 import ServiceData from '../types/ServiceData'
 
 import { useSettingsStore } from '../../../../renderer/src/stores/settings.store'
+import { PluginDetails } from '../../tasker/types/PluginDetails'
+import { useHomeassistantStore } from '../../../../renderer/src/stores/homeassistant.store'
+import { HomeassistantStatus } from '../enums/HomeassistantStatus'
 
 export default class HomeassistantAction extends BaseActionType {
     markRawSettings = markRaw(HttpSettings)
     // base tasker configuration
-    name: string = 'HTTP Request'
+    type: 'action' | 'plugin' = 'plugin'
+    pluginDetails: PluginDetails | null = {
+        name: 'Home Assistant',
+        id: 'homeassistant',
+        tooltip: 'Plugin for Home Assistant HTTP requests',
+        version: '1.0.0',
+        icon: 'home-assistant'
+    }
+    name: string = 'Home assistant action'
     tasker_code: number = 339
     tasker_name: string = 'HTTP Request'
 
@@ -56,13 +67,31 @@ export default class HomeassistantAction extends BaseActionType {
         this.params.follow_redirects = this.action.args[9]?.value as boolean
         this.params.use_cookies = this.action.args[10]?.value as boolean
         this.params.structure_output = this.action.args[11]?.value as boolean
-
-        this.serviceData = this.urlToServiceData(this.params.url, JSON.parse(this.params.body))
+        if (
+            this.params.body === undefined ||
+            this.params.body === null ||
+            this.params.body === ''
+        ) {
+            this.serviceData = this.urlToServiceData(this.params.url, null)
+        } else {
+            try {
+                this.serviceData = this.urlToServiceData(
+                    this.params.url,
+                    JSON.parse(this.params.body)
+                )
+            } catch (error) {
+                this.serviceData = this.urlToServiceData(this.params.url, null)
+            }
+        }
 
         this.resetBothFormObjects()
     }
 
-  canHandle(): boolean {
+    canHandle(): boolean {
+        const homeassistantStore = useHomeassistantStore()
+        if (homeassistantStore.homeAssistantStatus !== HomeassistantStatus.CONNECTED) {
+            return false
+        }
         if (this.action.code === this.tasker_code && this.action.name === this.tasker_name) {
             if (
                 this.params.method_type === MethodType.POST &&
@@ -109,12 +138,27 @@ export default class HomeassistantAction extends BaseActionType {
     submitSettingsForm(): boolean {
         super.submitSettingsForm()
         this.params.timeout = this.currentSettingsFormObject['timeout'] as number
+        if (this.params.timeout === undefined || this.params.timeout < 0) {
+            this.params.timeout = 5
+        }
         this.params.trust_any_certificate = this.currentSettingsFormObject[
             'trust_any_certificate'
         ] as boolean
+        if (this.params.trust_any_certificate === undefined) {
+            this.params.trust_any_certificate = false
+        }
         this.params.follow_redirects = this.currentSettingsFormObject['follow_redirects'] as boolean
+        if (this.params.follow_redirects === undefined) {
+            this.params.follow_redirects = true
+        }
         this.params.use_cookies = this.currentSettingsFormObject['use_cookies'] as boolean
+        if (this.params.use_cookies === undefined) {
+            this.params.use_cookies = true
+        }
         this.params.structure_output = this.currentSettingsFormObject['structure_output'] as boolean
+        if (this.params.structure_output === undefined) {
+            this.params.structure_output = true
+        }
 
         console.log('Updated parameters:', this.params)
         this.setArgs()
@@ -146,10 +190,19 @@ export default class HomeassistantAction extends BaseActionType {
     updateDataContainerValue(key: string, value: string): void {
         if (this.currentFormObject['dataContainer']) {
             if (!this.currentFormObject['dataContainer'][key]) {
-                this.currentFormObject['dataContainer'][key] = { toggle: false, value: '' }
+                this.currentFormObject['dataContainer'][key] = { toggle: true, value: value }
+                console.log(
+                    'Adding new dataContainer key:',
+                    key,
+                    'with value:',
+                    value,
+                    this.currentFormObject['dataContainer'][key]
+                )
+            } else {
+                this.currentFormObject['dataContainer'][key].value = value
             }
-            this.currentFormObject['dataContainer'][key].value = value
         }
+        console.log('Updated dataContainer:', this.currentFormObject['dataContainer'])
     }
 
     updateDataContainerToggle(key: string, toggle: boolean): void {
@@ -260,6 +313,9 @@ export default class HomeassistantAction extends BaseActionType {
 
     urlToServiceData(url: string, body: object | null = null): ServiceData {
         const urlServiceData = new ServiceData()
+        if (url === undefined || url === null || url === '') {
+            return urlServiceData
+        }
 
         if (
             !url.startsWith(this.settingsStore.settings.homeassistant.replace_url_var) &&
@@ -310,9 +366,17 @@ export default class HomeassistantAction extends BaseActionType {
 
     public buildUrl(path: string, params: URLSearchParams | null = null): string {
         if (params) {
-            return this.settingsStore.settings.homeassistant.url + path + '?' + params.toString()
+            return this.getUrl() + path + '?' + params.toString()
         }
-        return this.settingsStore.settings.homeassistant.url + path
+        return this.getUrl() + path
+    }
+
+    private getUrl(): string {
+        let baseUrl = this.settingsStore.settings.homeassistant.replace_url_var
+        if (baseUrl === '') {
+            baseUrl = this.settingsStore.settings.homeassistant.url
+        }
+        return baseUrl
     }
 
     static createNewAction(): HomeassistantAction {
@@ -320,7 +384,7 @@ export default class HomeassistantAction extends BaseActionType {
         action.code = 339
         action.name = 'HTTP Request'
         action.args = [
-            { id: 1, name: 'Method', value: MethodType.GET },
+            { id: 1, name: 'Method', value: MethodType.POST },
             { id: 2, name: 'URL', value: '' },
             { id: 3, name: 'Headers', value: '' },
             { id: 4, name: 'Query Parameters', value: '' },

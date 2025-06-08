@@ -2,6 +2,7 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 import { ActualService } from '@main/clients/homeassistant/types/ActualService'
 import { TaskerClientActivityStatus } from '@main/clients/tasker/enums/TaskerClientActivityStatus'
 import Action from '@main/clients/tasker/types/Action'
+import { Variable } from '@main/clients/tasker/types/Variable'
 import { AllSettings } from '@main/settings/types/AllSettings'
 import { GeneralSettings } from '@main/settings/types/GeneralSettings'
 import { HomeassistantSettings } from '@main/settings/types/HomeassistantSettings'
@@ -19,7 +20,9 @@ declare global {
             saveTaskLabel: (index: number, label: string) => Promise<void>
             deleteTask: (index: number) => Promise<void>
             replaceAction: (index: number, action: Action) => Promise<void>
+            createAction: (action: Action) => Promise<void>
             moveTask: (fromIndex: number, toIndex: number) => Promise<void>
+            reloadSettings: (callback: () => void) => void
             settingsLoaded: (callback: (settings: AllSettings) => void) => void
             actionSpecsLoaded: (
                 callback: (data: {
@@ -39,6 +42,7 @@ declare global {
                 errorStatus: TaskerErrorStatus
                 clientActivityStatus: TaskerClientActivityStatus
             }>
+            taskerListVariables: () => Promise<Variable[]>
             taskerListActions: () => Promise<Action[]>
             taskerListActionSpecs: () => Promise<{
                 actionSpecs: ActionSpec[]

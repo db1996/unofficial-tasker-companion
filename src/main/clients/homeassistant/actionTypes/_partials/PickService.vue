@@ -1,31 +1,29 @@
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts" setup>
-import { onMounted, PropType, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import MdiIcon from '../../../../../renderer/src/components/MdiIcon.vue'
 import DomainCard from '../../types/DomainCard'
 import { capitalize, forEach } from 'lodash'
 import BaseButton from '../../../../../renderer/src/components/BaseButton.vue'
 import { useHomeassistantStore } from '../../../../../renderer/src/stores/homeassistant.store'
-import TextInput from '../../../../../renderer/src/components/form/TextInput.vue'
-import HomeassistantAction from '../HomeassistantAction'
 import { HomeassistantStatus } from '../../enums/HomeassistantStatus'
+import BsModal from '../../../../../renderer/src/components/BsModal.vue'
 
 const homeassistantStore = useHomeassistantStore()
-const emit = defineEmits(['stop'])
+const emit = defineEmits(['stop', 'service-picked'])
 
 const props = defineProps({
-    modelValue: Object as PropType<HomeassistantAction>
+    domain: {
+        type: String,
+        default: ''
+    }
 })
+
+const show = ref(false)
 
 const form = {
     search: '',
     domain: ''
-}
-
-function recreateFormObject() {
-    if (!props.modelValue) return
-
-    form.domain = props.modelValue.currentFormObject['domain'] || ''
 }
 
 const domainOrder = {
@@ -77,26 +75,24 @@ const domainOrder = {
 }
 const domainCards = ref<DomainCard[]>([])
 
+watch(
+    () => props.domain,
+    (newVal) => {
+        if (newVal) {
+            form.domain = props.domain
+            searchServices()
+        }
+    },
+    { immediate: true }
+)
+
 onMounted(async () => {
-    console.log('Mounted pickService component, retrieving data...')
-    if (homeassistantStore.isBooting) {
+    if (homeassistantStore.isBooting || homeassistantStore.servicesFront.length === 0) {
         return
     }
-    recreateFormObject()
     searchServices()
+    show.value = true
 })
-
-watch(
-    () => props.modelValue,
-    () => {
-        if (homeassistantStore.isBooting) {
-            return
-        }
-        recreateFormObject()
-        searchServices()
-    },
-    { immediate: true, deep: true }
-)
 
 watch(
     () => homeassistantStore.homeAssistantStatus,
@@ -106,7 +102,6 @@ watch(
             homeassistantStore.servicesFront.length > 0
         ) {
             initDefaultCards()
-            recreateFormObject()
             searchServices()
         }
     },
@@ -175,84 +170,96 @@ function searchServices() {
 function clickCard(domainCard: DomainCard) {
     domainCards.value = []
     if (domainCard.service) {
-        props.modelValue?.updateFormObject('domain', domainCard.domain)
-        props.modelValue?.updateFormObject('service', domainCard.service)
-        props.modelValue?.updateFormObject('entity_id', '')
-        props.modelValue?.updateFormObject('dataContainer', {})
+        emit('service-picked', {
+            domain: domainCard.domain,
+            service: domainCard.service
+        })
         emit('stop')
+        nextTick(() => {
+            reset()
+        })
     } else {
-        props.modelValue?.updateFormObject('domain', domainCard.domain)
-        props.modelValue?.updateFormObject('service', '')
+        form.domain = domainCard.domain
         searchServices()
     }
 }
 
 function reset() {
-    props.modelValue?.updateFormObject('domain', '')
-    props.modelValue?.updateFormObject('service', '')
+    form.search = ''
+    form.domain = ''
+    domainCards.value = []
+    initDefaultCards()
     searchServices()
 }
 </script>
 <template>
-    <div class="row">
-        <div class="col-5">
-            <div class="input-group mb-3">
-                <input
-                    v-model="form.search"
-                    type="text"
-                    class="form-control"
-                    name="search"
-                    placeholder="Search"
-                    @input="searchServices"
-                />
-                <span id="basic-addon1" class="input-group-text">Search</span>
-            </div>
-        </div>
-        <div class="col-5">
-            <div class="input-group mb-3">
-                <TextInput id="domain" v-model="form.domain" name="Domain" placeholder="Domain" />
-            </div>
-        </div>
-        <div class="col-2">
-            <BaseButton
-                v-tooltip
-                :btn-class="'btn-secondary'"
-                icon-left="close"
-                data-title="Empty search"
-                @click="reset"
-            />
-            <BaseButton
-                v-tooltip
-                :btn-class="'btn-secondary ms-2'"
-                icon-left="arrow-left"
-                data-title="Go back to edit screen"
-                @click="emit('stop')"
-            />
-        </div>
-    </div>
-    <ul class="list-group mt-2">
-        <li
-            v-for="(value, key) in domainCards"
-            :key="key"
-            class="list-group-item hover-active"
-            @click="clickCard(value)"
-        >
+    <BsModal :show="show" @close="$emit('stop')">
+        <template #title>
+            <h5 class="modal-title">Pick a service</h5>
+        </template>
+        <template #content>
             <div class="row">
-                <div class="col-1 d-flex align-items-center">
-                    <MdiIcon :icon="value.icon" />
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <div class="col">
-                            <div class="fw-bold">{{ value.name }}</div>
-                            {{ value.description }}
-                        </div>
-                        <div class="col-2 d-flex align-items-center justify-content-end">
-                            <BaseButton sm btn-class="btn-secondary" icon-left="plus" />
-                        </div>
+                <div class="col-6">
+                    <div class="input-group mb-3">
+                        <input
+                            v-model="form.search"
+                            type="text"
+                            class="form-control"
+                            name="search"
+                            placeholder="Search"
+                            @input="searchServices"
+                        />
+                        <span id="basic-addon1" class="input-group-text">Search</span>
                     </div>
                 </div>
+                <div class="col-5">
+                    <div class="input-group mb-3">
+                        <input
+                            id="domain"
+                            v-model="form.domain"
+                            type="text"
+                            class="form-control"
+                            name="Domain"
+                            placeholder="Domain"
+                        />
+                        <span id="basic-addon1" class="input-group-text">Domain</span>
+                    </div>
+                </div>
+                <div class="col-1">
+                    <BaseButton
+                        v-tooltip
+                        :btn-class="'btn-secondary'"
+                        icon-left="close"
+                        data-title="Empty search"
+                        @click="reset"
+                    />
+                </div>
             </div>
-        </li>
-    </ul>
+            <ul class="list-group mt-2">
+                <li
+                    v-for="(value, key) in domainCards"
+                    :key="key"
+                    class="list-group-item hover-active"
+                    @click="clickCard(value)"
+                >
+                    <div class="row">
+                        <div class="col-1 d-flex align-items-center">
+                            <MdiIcon :icon="value.icon" />
+                        </div>
+                        <div class="col">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="fw-bold">{{ value.name }}</div>
+                                    {{ value.description }}
+                                </div>
+                                <div class="col-2 d-flex align-items-center justify-content-end">
+                                    <BaseButton sm btn-class="btn-secondary" icon-left="plus" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </template>
+    </BsModal>
 </template>

@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.unofficial-tasker-companion
 productName: Unofficial Tasker Companion
 directories:
   buildResources: build
@@ -13,6 +13,7 @@ asarUnpack:
   - resources/**
 win:
   executableName: unofficial-tasker-companion
+  icon: build/favicon.ico
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

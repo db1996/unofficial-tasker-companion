@@ -1,9 +1,7 @@
 $sidebar-width: 130px;
 
 .sidebar{
-  height:100%;
   width: $sidebar-width;
-  min-height: calc(100vh - 75px);
 }
 
 .navbar{

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MdiIcon from '@renderer/components/MdiIcon.vue'
+import { RouterLink } from 'vue-router';
 
 defineProps({
     to: {
@@ -18,12 +19,12 @@ defineProps({
 </script>
 <template>
     <li>
-        <a class="dropdown-item" :href="to">
+        <RouterLink class="dropdown-item" :to="to">
             <MdiIcon v-if="icon" :icon="icon" class="me-2" />
             <slot v-if="$slots.default" />
             <template v-else>
                 {{ txt }}
             </template>
-        </a>
+        </RouterLink>
     </li>
 </template>

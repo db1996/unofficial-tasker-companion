@@ -141,7 +141,6 @@ export const useHomeassistantStore = defineStore('homeassistant', () => {
             }
             entities.value = _entities as HaEntity[]
             isBooting.value = false
-            console.log('Homeassistant entities retrieved:', entities.value.length)
         } catch (error) {
             console.error('Error retrieving Homeassistant entities:', error)
             isRetrievingData.value = false

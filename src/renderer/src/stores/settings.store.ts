@@ -12,7 +12,9 @@ export const useSettingsStore = defineStore('settings', () => {
             url: '',
             token: '',
             replace_url_var: '%HASS_server',
-            replace_token_var: '%HASS_access_token'
+            replace_token_var: '%HASS_access_token',
+            fetch_phone_ip: false,
+            phone_ip_entity_id: ''
         }
     })
 
@@ -39,6 +41,10 @@ export const useSettingsStore = defineStore('settings', () => {
         await window.api?.saveAllSettings(JSON.parse(JSON.stringify(newSettings)))
         settings.value = JSON.parse(JSON.stringify(newSettings))
     }
+
+    window.api?.reloadSettings(async () => {
+        await getSettings()
+    })
 
     return {
         settings,

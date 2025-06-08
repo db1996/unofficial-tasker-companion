@@ -6,9 +6,11 @@ import DefaultForm from './default/DefaultForm.vue'
 import { forEach } from 'lodash'
 import type { SettingsFormComponent } from '../ComponentTypes/SettingsFormComponent'
 import { ActionTypeSpec } from '../enums/ActionTypeSpec'
-
+import { PluginDetails } from '../types/PluginDetails'
 export default class BaseActionType {
     markRawSettings: unknown | null = null
+    type: 'action' | 'plugin' = 'action'
+    pluginDetails: PluginDetails | null = null
     tasker_name: string = ''
     tasker_code: number = 0
     name: string = ''
@@ -23,6 +25,7 @@ export default class BaseActionType {
     currentFormObject: object = {}
     currentSettingsFormObject: object = {}
     currentCustomSettingsFormObject: object = {}
+    availablePluginActionTypes: BaseActionType[] = []
 
     // Always run this super in the constructor of the child class first. This will set the action and the tasker_name and tasker_code
     constructor(action: Action) {

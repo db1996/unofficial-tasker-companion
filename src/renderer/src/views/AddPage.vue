@@ -15,8 +15,8 @@ const currentAction = ref<BaseActionType | null>(null)
 const actionTypeFormComponent = ref<ActiontypeFormComponent | null>(null)
 
 const route = useRoute()
-const index = computed(() => {
-    const indexParam = route.params['index']
+const code = computed(() => {
+    const indexParam = route.params['code']
     return typeof indexParam === 'string' ? parseInt(indexParam, 10) : 0
 })
 
@@ -26,35 +26,18 @@ const pluginEditType = computed(() => {
 })
 
 async function getFormComponent() {
-    currentAction.value = taskerStore.actionTypeRows[index.value] || null
-    if (!currentAction.value) {
-        return
+    currentAction.value = taskerStore.createNewActionType(code.value, pluginEditType.value)
+    if (currentAction.value) {
+        actionTypeFormComponent.value = await currentAction.value.getFormComponent()
+    } else {
+        actionTypeFormComponent.value = null
     }
-    if (pluginEditType.value.length > 0) {
-        if (currentAction.value.availablePluginActionTypes.length > 0) {
-            currentAction.value =
-                currentAction.value.availablePluginActionTypes.find(
-                    (action) => action.pluginDetails?.id === pluginEditType.value
-                ) || null
-        } else {
-            currentAction.value = null
-        }
-    }
-    if (!currentAction.value) {
-        return
-    }
-    actionTypeFormComponent.value = await currentAction.value.getFormComponent()
 }
 
 watch(
-    () => taskerStore.actionTypeRows,
-    async (newValue) => {
-        actionTypeFormComponent.value = null // Reset the form component when the action changes
-        if (newValue.length > 0) {
-            await getFormComponent()
-        } else {
-            currentAction.value = null
-        }
+    () => code.value,
+    async () => {
+        await getFormComponent()
     },
     { immediate: true }
 )
@@ -70,8 +53,9 @@ async function save() {
         currentAction.value.submitForm()
         currentAction.value.submitSettingsForm()
         currentAction.value.setArgs()
+        console.log(`Saving action`, currentAction.value)
 
-        await taskerStore.replaceAction(currentAction.value)
+        await taskerStore.createAction(currentAction.value)
         nextTick(() => {
             router.push('/home')
         })
@@ -80,7 +64,7 @@ async function save() {
 </script>
 
 <template>
-    <appLayout :title="`Edit task action - ${currentAction ? currentAction.name : ''}`">
+    <appLayout :title="`Add task action - ${currentAction ? currentAction.name : ''}`">
         <template #toolbar>
             <BaseButton btn-class="btn-primary me-2" icon-left="content-save" @click="save">
                 Save

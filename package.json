@@ -1,6 +1,6 @@
 {
   "name": "unofficial-tasker-companion",
-  "version": "2025.06.022",
+  "version": "2025.06.1",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -12,7 +12,8 @@
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
-    "dev": "electron-vite dev",
+    "dev": "npm install --no-save sass-embedded-win32-x64 && npm install --no-save @rollup/rollup-win32-x64-msvc && electron-vite dev",
+    "dev:no-win": "electron-vite dev --no-win",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
