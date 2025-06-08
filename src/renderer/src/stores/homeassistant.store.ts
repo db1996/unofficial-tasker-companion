@@ -140,9 +140,11 @@ export const useHomeassistantStore = defineStore('homeassistant', () => {
                 return
             }
             entities.value = _entities as HaEntity[]
-            console.log("homeassistant IP entity: ", entities.value.find(e => e.entity_id === 'sensor.oneplus_nord_4_wi_fi_ip_address'))
+            console.log(
+                'homeassistant IP entity: ',
+                entities.value.find((e) => e.entity_id === 'sensor.oneplus_nord_4_wi_fi_ip_address')
+            )
             isBooting.value = false
-            console.log('Homeassistant entities retrieved:', entities.value.length)
         } catch (error) {
             console.error('Error retrieving Homeassistant entities:', error)
             isRetrievingData.value = false

@@ -15,7 +15,6 @@ export default class TaskerClient {
     taskerclientActivityStatus: TaskerClientActivityStatus = TaskerClientActivityStatus.NONE
     isConnected: boolean = false
     isRunning: boolean = false
-    private getActionsQueue: (() => void)[] = []
 
     actionSpecs: Array<ActionSpec> = []
     categorySpecs: Array<CategorySpec> = []
@@ -117,7 +116,7 @@ export default class TaskerClient {
             const actionSpecsData: Array<object> = await response.json()
             this.isRunning = false
             if (!Array.isArray(actionSpecsData)) {
-                this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.OK)
+                this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.NO_CONNECT)
                 return []
             }
             const actionSpecs: Array<ActionSpec> = actionSpecsData.map(
@@ -142,7 +141,7 @@ export default class TaskerClient {
             const categorySpecData: Array<object> = await response.json()
             this.isRunning = false
             if (!Array.isArray(categorySpecData)) {
-                this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.OK)
+                this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.NO_CONNECT)
                 return []
             }
             const categorySpecs: Array<CategorySpec> = categorySpecData.map(
@@ -164,29 +163,33 @@ export default class TaskerClient {
     }
 
     async getVariables(): Promise<Array<Variable> | null> {
-        this.isRunning = true
-        this.updateStatus(TaskerClientActivityStatus.RETRIEVE)
-        try {
-            const response = await fetch(this.url + '/variables')
-            const categorySpecData: Array<object> = await response.json()
+        return this.request('getVariables', async () => {
+            this.isRunning = true
+            this.updateStatus(TaskerClientActivityStatus.RETRIEVE)
+            try {
+                const response = await fetch(this.url + '/variables')
+                const categorySpecData: Array<object> = await response.json()
 
-            this.isRunning = false
-            if (!Array.isArray(categorySpecData)) {
+                this.isRunning = false
+                if (!Array.isArray(categorySpecData)) {
+                    this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.NO_CONNECT)
+                    return null
+                }
+
+                const variables: Array<Variable> = categorySpecData.map((data) => data as Variable)
+
                 this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.OK)
+                return variables
+            } catch (e) {
+                console.log('error caught variables', e)
+                this.isRunning = false
+                this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.NO_CONNECT)
                 return null
             }
-
-            const variables: Array<Variable> = categorySpecData.map((data) => data as Variable)
-
-            this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.OK)
-            return variables
-        } catch (e) {
-            console.log('error caught variables', e)
-            this.isRunning = false
-            this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.NO_CONNECT)
-            return null
-        }
+        })
     }
+
+    private getActionsQueue: (() => void)[] = []
 
     async getActions(retryCount = 0): Promise<Array<Action> | null> {
         if (this.isRunning) {
@@ -199,11 +202,13 @@ export default class TaskerClient {
             })
         }
         if (this.error !== TaskerErrorStatus.OK) {
+            this.updateStatus(TaskerClientActivityStatus.NONE, this.error)
             console.warn('getActions called but TaskerClient is not connected. Error:', this.error)
             return null
         }
         this.isRunning = true
         this.updateStatus(TaskerClientActivityStatus.RETRIEVE)
+        const startTime = Date.now()
         try {
             const response = await fetch(this.url + '/actions')
             const actions: Array<Action> = await response.json()
@@ -231,7 +236,9 @@ export default class TaskerClient {
             return actions
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
+            const elapsed = Date.now() - startTime
             const shouldRetry =
+                elapsed <= 4000 && // Only retry if request took 4s or less
                 retryCount < 3 &&
                 (e?.code === 'ECONNRESET' ||
                     e?.message?.includes('fetch failed') ||
@@ -329,18 +336,15 @@ export default class TaskerClient {
         }
     }
 
-    async insertActionLast(actionType: BaseActionType) {
+    async insertActionLast(actionType: Action) {
         this.isRunning = true
         this.updateStatus(TaskerClientActivityStatus.UPLOAD)
-        actionType.setArgs()
 
         const tUrl = this.buildUrl('/actions')
+
         const response = await fetch(
             tUrl,
-            this.getOptions('PATCH', {
-                action: actionType.action,
-                index: actionType.index
-            })
+            this.getOptions('PATCH', { action: JSON.stringify(actionType) })
         )
 
         try {
@@ -403,6 +407,11 @@ export default class TaskerClient {
         }
         if (error !== undefined) {
             this.error = error
+        }
+        if (this.error === TaskerErrorStatus.OK) {
+            this.isConnected = true
+        } else {
+            this.isConnected = false
         }
         this.updateFront()
     }

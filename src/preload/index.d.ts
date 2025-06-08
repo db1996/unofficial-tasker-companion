@@ -19,6 +19,7 @@ declare global {
             saveTaskLabel: (index: number, label: string) => Promise<void>
             deleteTask: (index: number) => Promise<void>
             replaceAction: (index: number, action: Action) => Promise<void>
+            createAction: (action: Action) => Promise<void>
             moveTask: (fromIndex: number, toIndex: number) => Promise<void>
             reloadSettings: (callback: () => void) => void
             settingsLoaded: (callback: (settings: AllSettings) => void) => void

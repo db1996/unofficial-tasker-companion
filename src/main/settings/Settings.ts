@@ -80,9 +80,14 @@ export default class Settings {
                             console.log(
                                 `Using phone IP from Home Assistant: ${phoneIpEntity.state}`
                             )
-                            Settings.allSettings.general.tasker_url = `http://${phoneIpEntity.state}:8745`
-                            Settings.saveAllSettings(Settings.allSettings)
-                            Settings.mainWindow?.webContents.send('reload-settings')
+                            if (
+                                Settings.allSettings.general.tasker_url !==
+                                `http://${phoneIpEntity.state}:8745`
+                            ) {
+                                Settings.allSettings.general.tasker_url = `http://${phoneIpEntity.state}:8745`
+                                Settings.saveAllSettings(Settings.allSettings)
+                                Settings.mainWindow?.webContents.send('reload-settings')
+                            }
                         }
                     }
                     console.error('Error connecting to Tasker:', client.error)

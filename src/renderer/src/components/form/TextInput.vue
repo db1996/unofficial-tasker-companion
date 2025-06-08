@@ -1,6 +1,10 @@
 <script lang="ts" setup>
-import { defineProps, defineEmits, ref, watch, computed, onMounted } from 'vue'
+import { defineProps, defineEmits, ref, watch, computed, onMounted, nextTick } from 'vue'
 import BaseButton from '../BaseButton.vue'
+import { useLastFocusInput } from '../../stores/lastFocusInput.store'
+
+const lastFocusInput = useLastFocusInput()
+const inputRef = ref<HTMLInputElement | null>(null)
 
 const props = defineProps({
     modelValue: {
@@ -99,6 +103,14 @@ onMounted(() => {
     if (props.passVisible) {
         togglePassword()
     }
+    inputRef.value?.addEventListener('focus', () => {
+        if (inputRef.value) {
+            lastFocusInput.set({
+                el: inputRef.value,
+                insertText
+            })
+        }
+    })
 })
 
 const passwordIcon = ref('eye')
@@ -135,6 +147,23 @@ async function copyToClipboard() {
     }
     flashCopied.value = true
 }
+
+function insertText(text: string) {
+    const el = inputRef.value
+    if (!el) return
+
+    const start = el.selectionStart ?? 0
+    const end = el.selectionEnd ?? 0
+    const newValue = el.value.slice(0, start) + text + el.value.slice(end)
+
+    el.value = newValue
+    emit('update:modelValue', newValue)
+
+    el.setSelectionRange(start + text.length, start + text.length)
+    nextTick(() => {
+        el.focus()
+    })
+}
 </script>
 <template>
     <div :class="mainClass">
@@ -152,6 +181,7 @@ async function copyToClipboard() {
             <input
                 v-if="type !== 'textarea'"
                 :id="id"
+                ref="inputRef"
                 :type="typeProxy"
                 class="form-control"
                 :value="proxyValue"
@@ -163,6 +193,7 @@ async function copyToClipboard() {
             <textarea
                 v-else
                 :id="id"
+                ref="inputRef"
                 class="form-control"
                 :value="proxyValue"
                 :aria-describedby="randomId"
@@ -185,6 +216,7 @@ async function copyToClipboard() {
         <input
             v-else-if="type !== 'textarea'"
             :id="id"
+            ref="inputRef"
             :type="type"
             class="form-control"
             :value="proxyValue"
@@ -196,6 +228,7 @@ async function copyToClipboard() {
         <textarea
             v-else
             :id="id"
+            ref="inputRef"
             class="form-control"
             :value="proxyValue"
             :aria-describedby="randomId"

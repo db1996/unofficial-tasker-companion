@@ -4,4 +4,5 @@ export type EditButton = {
     tooltip: string
     icon: string
     plugin: string | null
+    to: string | null
 }

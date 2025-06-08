@@ -139,11 +139,11 @@ app.whenReady().then(() => {
             // Wait for the tasker data to be loaded before replacing the action
             await Settings.taskerDataPromise
         }
-        let actions: Action[] | null | undefined = await Settings.taskerClient?.getActions()
+        let actions: Action[] = (await Settings.taskerClient?.getActions()) || []
+
         if (!actions) {
             actions = []
         }
-        Settings.taskerClient?.updateFront()
         return actions
     })
 
@@ -174,6 +174,16 @@ app.whenReady().then(() => {
                 await Settings.taskerDataPromise
             }
             await Settings.taskerClient.replaceAction(index, action)
+        }
+    })
+
+    ipcMain.handle('create-action', async (_event, action: Action) => {
+        if (Settings.taskerClient) {
+            if (Settings.taskerDataPromise) {
+                // Wait for the tasker data to be loaded before replacing the action
+                await Settings.taskerDataPromise
+            }
+            await Settings.taskerClient.insertActionLast(action)
         }
     })
 
@@ -297,7 +307,12 @@ app.whenReady().then(() => {
                 categorySpecs: await Settings.taskerClient.getCategorySpecs()
             }
         }
-        return []
+        return [
+            {
+                actionSpecs: [],
+                categorySpecs: []
+            }
+        ]
     })
 
     ipcMain.handle('tasker-check-settings', async (_event, taskerSettings: GeneralSettings) => {

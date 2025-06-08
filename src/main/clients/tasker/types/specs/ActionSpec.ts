@@ -21,7 +21,7 @@ export default class ActionSpec {
         })
     }
 
-    createAction(): Action {
+    public createAction(): Action {
         const action = new Action()
 
         action.code = this.code

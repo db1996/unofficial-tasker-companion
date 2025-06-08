@@ -119,12 +119,14 @@ export const useTaskerStore = defineStore('tasker', () => {
             const actions: Array<Action> = (await window.api?.taskerListActions()) || []
             actionTypeRows.value = []
             forEach(actions, async (action, index) => {
-                const baseActionType = manager.getFormForAction(action)
+                const baseActionType = manager.getActionType(action)
                 if (baseActionType != null) {
                     baseActionType.index = index
                     actionTypeRows.value.push(baseActionType)
                 }
             })
+
+            console.log('Actions refreshed:', actionTypeRows.value)
         } catch (error) {
             console.error('Error refreshing actions:', error)
         }
@@ -157,7 +159,6 @@ export const useTaskerStore = defineStore('tasker', () => {
             const actionClone = cloneDeep(actionType.action)
             actionClone.actionSpec = null // remove actionSpec to avoid circular reference
             await window.api?.replaceAction(actionType.index, actionClone)
-            await refreshActions()
         } catch (error) {
             console.error('Error replacing action:', error)
         }
@@ -179,6 +180,47 @@ export const useTaskerStore = defineStore('tasker', () => {
         } catch (error) {
             console.error('Error retrieving tasker settings:', error)
         }
+    }
+
+    function createNewActionType(code: number, plugin: string): BaseActionType | null {
+        let actionType: BaseActionType | null = null
+        try {
+            console.log('Creating new action with code:', code, 'and plugin:', plugin)
+            forEach(actionSpecs.value, (actionSpec) => {
+                if (actionSpec.code === code) {
+                    const actualActionSpec = new ActionSpec(actionSpec)
+                    const newAction = actualActionSpec.createAction()
+
+                    if (newAction) {
+                        if (plugin.length > 0) {
+                            actionType = manager.getPluginActionType(
+                                newAction,
+                                plugin
+                            ) as BaseActionType | null
+                        } else {
+                            actionType = manager.getActionType(newAction) as BaseActionType | null
+                        }
+                    }
+                }
+            })
+        } catch (error) {
+            console.error('Error creating new action:', error)
+        }
+
+        if (actionType) {
+            console.log('New action created:', actionType)
+            return actionType
+        }
+
+        return null
+    }
+
+    async function createAction(actionType: BaseActionType) {
+        actionType.setArgs()
+        const action = cloneDeep(actionType.action)
+        console.log('actual save', action)
+
+        await window.api?.createAction(action)
     }
 
     window.api?.taskerStatusUpdate((status) => {
@@ -220,7 +262,9 @@ export const useTaskerStore = defineStore('tasker', () => {
         deleteAction,
         moveAction,
         replaceAction,
-        checkSettings
+        checkSettings,
+        createNewActionType,
+        createAction
     }
 })
 

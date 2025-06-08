@@ -54,7 +54,6 @@ onMounted(async () => {
     resultEntities.value = homeassistantStore.entities
     searchEntities()
     show.value = true
-    console.log(`Mounted PickEntityModal, found ${homeassistantStore.entities.length} entities`)
 })
 
 function getFriendlyName(entity: HaEntity) {
@@ -113,7 +112,6 @@ function searchEntities() {
     let domainEntityies = homeassistantStore.entities.filter((entity) =>
         entity.entity_id?.startsWith(form.domain + '.')
     )
-    console.log(`Searching entities in domain: ${form.domain}`, domainEntityies)
 
     if (domainEntityies.length === 0) {
         domainEntityies = homeassistantStore.entities

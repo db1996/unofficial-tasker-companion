@@ -38,7 +38,9 @@ const argsList = computed(() => {
     }
 
     forEach(props.modelValue.action.args, (value) => {
-        strstr.push([value.name, value.value.toString()])
+        if (value.value !== undefined) {
+            strstr.push([value.name, value.value.toString()])
+        }
     })
     return strstr
 })
@@ -56,7 +58,9 @@ const editTypes = computed(() => {
             type: 'custom',
             btnClass: 'btn-primary',
             tooltip: 'Custom action form',
-            icon: 'pencil'
+            icon: 'pencil',
+            plugin: null,
+            to: `/edit/${props.modelValue.index}`
         } as EditButton,
         dropdown: Array<EditButton>()
     }
@@ -67,8 +71,38 @@ const editTypes = computed(() => {
             btnClass: 'btn-secondary',
             tooltip: 'No custom form yet, edit the arguments directly',
             icon: 'pencil',
-            plugin: null
+            plugin: null,
+            to: `/edit/${props.modelValue.index}`
         } as EditButton
+    }
+
+    if (props.modelValue.availablePluginActionTypes.length > 0) {
+        const firstPlugin = props.modelValue.availablePluginActionTypes[0]
+        const mainNow = JSON.parse(JSON.stringify(ret.main)) as EditButton
+        if (firstPlugin.pluginDetails?.id) {
+            ret.main = {
+                type: firstPlugin.type,
+                btnClass: 'btn-success',
+                tooltip: firstPlugin.pluginDetails?.tooltip,
+                icon: firstPlugin.pluginDetails?.icon,
+                plugin: firstPlugin.pluginDetails?.id,
+                to: `/edit/${props.modelValue.index}/${firstPlugin.pluginDetails?.id}`
+            } as EditButton
+        }
+        ret.dropdown = [mainNow]
+        forEach(props.modelValue.availablePluginActionTypes, (pluginActionType, index) => {
+            if (index === 0) {
+                return // Skip the first one, it's already added as main
+            }
+            ret.dropdown.push({
+                type: pluginActionType.type,
+                btnClass: 'btn-secondary',
+                tooltip: pluginActionType.pluginDetails?.tooltip,
+                icon: pluginActionType.pluginDetails?.icon,
+                plugin: pluginActionType.pluginDetails?.id,
+                to: `/edit/${props.modelValue.index}/${pluginActionType.pluginDetails?.id}`
+            } as EditButton)
+        })
     }
 
     return ret
@@ -140,6 +174,7 @@ async function deleteAction() {
                                 :data-title="editTypes.main.tooltip"
                                 :btn-class="editTypes.main.btnClass"
                                 :icon-left="editTypes.main.icon"
+                                :to="editTypes.main.to ?? `/edit/${modelValue.index}`"
                                 :checkrunning="true"
                             />
                             <button
@@ -156,6 +191,8 @@ async function deleteAction() {
                                     :key="editType.type"
                                     :icon="editType.icon"
                                     :txt="editType.tooltip"
+                                    :to="editType.to ?? `/edit/${modelValue.index}`"
+                                    @click="console.log('Clicked on', editType.to ?? `/edit/${modelValue.index}`)"
                                 />
                             </ul>
                         </div>
@@ -167,7 +204,7 @@ async function deleteAction() {
                             :btn-class="editTypes.main.btnClass"
                             :icon-left="editTypes.main.icon"
                             :checkrunning="true"
-                            :to="`/edit/${modelValue.index}`"
+                            :to="editTypes.main.to ?? `/edit/${modelValue.index}`"
                             class="me-2"
                         />
                         <BaseButton

@@ -36,6 +36,7 @@ const api = {
     deleteTask: async (index: number) => electronAPI.ipcRenderer.invoke('delete-task', index),
     replaceAction: async (index: number, action: Action) =>
         electronAPI.ipcRenderer.invoke('replace-action', index, action),
+    createAction: async (action: Action) => electronAPI.ipcRenderer.invoke('create-action', action),
     moveTask: async (fromIndex: number, toIndex: number) =>
         electronAPI.ipcRenderer.invoke('move-task', fromIndex, toIndex),
     settingsLoaded: (callback: (arg0: AllSettings) => void) =>
