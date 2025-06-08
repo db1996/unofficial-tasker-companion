@@ -10,6 +10,7 @@ import { cloneDeep, forEach } from 'lodash'
 import ActionSpec from '../../../main/clients/tasker/types/specs/ActionSpec'
 import { CategorySpec } from '../../../main/clients/tasker/types/CategorySpec'
 import { GeneralSettings } from '../../../main/settings/types/GeneralSettings'
+import { Variable } from '../../../main/clients/tasker/types/Variable'
 
 export const useTaskerStore = defineStore('tasker', () => {
     const manager: ActionTypeManager = new ActionTypeManager()
@@ -24,9 +25,6 @@ export const useTaskerStore = defineStore('tasker', () => {
     const actionTypeRows = ref<BaseActionType[]>([])
     const actionTypeFormComponent = ref<ActiontypeFormComponent | null>(null)
     const newBaseActionType = ref<BaseActionType | null>(null)
-    const showSettings = ref<boolean>(false)
-    const showNewTaskModal = ref<boolean>(false)
-    const pickVariable = ref<boolean>(false)
 
     const taskerStatus = computed(() => {
         const ret = {
@@ -90,9 +88,32 @@ export const useTaskerStore = defineStore('tasker', () => {
         if (!manager.loaded) {
             await manager.loadForms()
         }
+        if (taskerConnected.value) {
+            await getActionSpecs()
+            await refreshActions()
+        }
+    }
 
-        await getActionSpecs()
-        await refreshActions()
+    async function listVariables(): Promise<Variable[]> {
+        try {
+            const variables = await window.api?.taskerListVariables()
+            return variables || []
+        } catch (error) {
+            console.error('Error listing tasker variables:', error)
+            return []
+        }
+    }
+
+    async function forceReloadTasker(): Promise<void> {
+        const resp = await window.api?.taskerForceReload()
+
+        if (resp) {
+            actionSpecs.value = resp.actionSpecs || []
+            categorySpecs.value = resp.categorySpecs || []
+            console.log('Action specs reloaded:', actionSpecs.value.length)
+            console.log('Category specs reloaded:', categorySpecs.value.length)
+            await refreshActions()
+        }
     }
 
     async function getActionSpecs(): Promise<void> {
@@ -113,7 +134,13 @@ export const useTaskerStore = defineStore('tasker', () => {
         }
     }
 
+    const isRefreshing = ref(false)
+
     async function refreshActions() {
+        if (isRefreshing.value) {
+            return
+        }
+        isRefreshing.value = true
         try {
             console.log('Refreshing actions...')
             const actions: Array<Action> = (await window.api?.taskerListActions()) || []
@@ -129,6 +156,8 @@ export const useTaskerStore = defineStore('tasker', () => {
             console.log('Actions refreshed:', actionTypeRows.value)
         } catch (error) {
             console.error('Error refreshing actions:', error)
+        } finally {
+            isRefreshing.value = false
         }
     }
 
@@ -158,7 +187,7 @@ export const useTaskerStore = defineStore('tasker', () => {
             // create a clone of the action without actionSpec
             const actionClone = cloneDeep(actionType.action)
             actionClone.actionSpec = null // remove actionSpec to avoid circular reference
-            await window.api?.replaceAction(actionType.index, actionClone)
+            await window.api?.replaceAction(actionType.action.index, actionClone)
         } catch (error) {
             console.error('Error replacing action:', error)
         }
@@ -250,9 +279,6 @@ export const useTaskerStore = defineStore('tasker', () => {
         actionTypeRows,
         actionTypeFormComponent,
         newBaseActionType,
-        showSettings,
-        showNewTaskModal,
-        pickVariable,
         categorySpecs,
         actionSpecs,
         taskerStatus,
@@ -264,7 +290,9 @@ export const useTaskerStore = defineStore('tasker', () => {
         replaceAction,
         checkSettings,
         createNewActionType,
-        createAction
+        createAction,
+        forceReloadTasker,
+        listVariables
     }
 })
 

@@ -166,41 +166,34 @@ export default class TaskerClient {
         return this.request('getVariables', async () => {
             this.isRunning = true
             this.updateStatus(TaskerClientActivityStatus.RETRIEVE)
-            try {
-                const response = await fetch(this.url + '/variables')
-                const categorySpecData: Array<object> = await response.json()
+            const response = await fetch(this.url + '/variables')
+            const categorySpecData: Array<object> = await response.json()
 
-                this.isRunning = false
-                if (!Array.isArray(categorySpecData)) {
-                    this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.NO_CONNECT)
-                    return null
-                }
-
-                const variables: Array<Variable> = categorySpecData.map((data) => data as Variable)
-
-                this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.OK)
-                return variables
-            } catch (e) {
-                console.log('error caught variables', e)
-                this.isRunning = false
+            this.isRunning = false
+            if (!Array.isArray(categorySpecData)) {
                 this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.NO_CONNECT)
                 return null
             }
+
+            const variables: Array<Variable> = categorySpecData.map((data) => data as Variable)
+
+            this.updateStatus(TaskerClientActivityStatus.NONE, TaskerErrorStatus.OK)
+            return variables
         })
     }
 
     private getActionsQueue: (() => void)[] = []
 
     async getActions(retryCount = 0): Promise<Array<Action> | null> {
-        if (this.isRunning) {
-            // Queue the request and return the same promise
-            return new Promise((resolve) => {
-                this.getActionsQueue.push(async () => {
-                    const result = await this.getActions()
-                    resolve(result)
-                })
-            })
-        }
+        // if (this.isRunning) {
+        //     // Queue the request and return the same promise
+        //     return new Promise((resolve) => {
+        //         this.getActionsQueue.push(async () => {
+        //             const result = await this.getActions()
+        //             resolve(result)
+        //         })
+        //     })
+        // }
         if (this.error !== TaskerErrorStatus.OK) {
             this.updateStatus(TaskerClientActivityStatus.NONE, this.error)
             console.warn('getActions called but TaskerClient is not connected. Error:', this.error)
@@ -321,7 +314,11 @@ export default class TaskerClient {
         this.updateStatus(TaskerClientActivityStatus.UPLOAD)
 
         const tUrl = this.buildUrl('/actions')
-        const response = await fetch(tUrl, this.getOptions('PUT', { action: action, index: index }))
+        console.log(JSON.stringify({ action: JSON.stringify(action), index: index.toString() }))
+        const response = await fetch(
+            tUrl,
+            this.getOptions('PUT', { action: JSON.stringify(action), index: index.toString() })
+        )
 
         try {
             const data = await response.json()

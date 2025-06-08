@@ -3,6 +3,9 @@ import { onMounted, onUnmounted, watch, ref, computed } from 'vue'
 import { Modal } from 'bootstrap' // Import Bootstrap's Modal class
 import BaseButton from './BaseButton.vue'
 
+import useTooltipStore from '../stores/useTooltip'
+const tooltipStore = useTooltipStore()
+
 const props = defineProps({
     show: {
         type: Boolean,
@@ -28,6 +31,7 @@ const modalElement = ref(null)
 let bootstrapModal: Modal | null = null
 
 const close = () => {
+    tooltipStore.destroyAllTooltips()
     if (props.closeable) {
         emit('close')
     }
@@ -54,13 +58,17 @@ watch(
         if (newVal && bootstrapModal) {
             bootstrapModal.show()
         } else if (bootstrapModal) {
+            tooltipStore.destroyAllTooltips()
             bootstrapModal.hide()
         }
     }
 )
 
 onUnmounted(() => {
-    if (bootstrapModal) bootstrapModal.hide()
+    tooltipStore.destroyAllTooltips()
+    if (bootstrapModal) {
+        bootstrapModal.hide()
+    }
 
     document.removeEventListener('keydown', closeOnEscape)
     if (modalElement.value) {
@@ -96,10 +104,10 @@ const maxWidthClass = computed(() => {
                         <slot name="title" />
                         <BaseButton
                             v-if="closeable"
-                            btn-type="btn-close"
+                            btn-type="btn-primary"
                             data-bs-dismiss="modal"
                             aria-label="Close"
-                            icon-left="close"
+                            icon-left="keyboard-esc"
                             @click="emit('close')"
                         />
                     </div>

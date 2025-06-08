@@ -62,6 +62,10 @@ const props = defineProps({
     passVisible: {
         type: Boolean,
         default: false
+    },
+    ignoreFocus: {
+        type: Boolean,
+        default: false
     }
 })
 
@@ -103,6 +107,8 @@ onMounted(() => {
     if (props.passVisible) {
         togglePassword()
     }
+
+    if (props.ignoreFocus) return
     inputRef.value?.addEventListener('focus', () => {
         if (inputRef.value) {
             lastFocusInput.set({

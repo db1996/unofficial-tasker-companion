@@ -91,18 +91,7 @@ onMounted(async () => {
         return
     }
     searchServices()
-    console.log(
-        `Mounted PickServiceModal, found ${homeassistantStore.servicesFront.length} services`
-    )
     show.value = true
-})
-
-onMounted(async () => {
-    console.log('Mounted pickService component, retrieving data...')
-    if (homeassistantStore.isBooting) {
-        return
-    }
-    searchServices()
 })
 
 watch(

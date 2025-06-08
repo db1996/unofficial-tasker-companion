@@ -135,12 +135,13 @@ app.whenReady().then(() => {
     })
 
     ipcMain.handle('tasker-list-actions', async () => {
+        console.log('tasker-list-actions called')
         if (Settings.taskerDataPromise) {
             // Wait for the tasker data to be loaded before replacing the action
             await Settings.taskerDataPromise
         }
-        let actions: Action[] = (await Settings.taskerClient?.getActions()) || []
 
+        let actions: Action[] = (await Settings.taskerClient?.getActions()) || []
         if (!actions) {
             actions = []
         }
@@ -173,6 +174,7 @@ app.whenReady().then(() => {
                 // Wait for the tasker data to be loaded before replacing the action
                 await Settings.taskerDataPromise
             }
+            console.log(JSON.stringify(action))
             await Settings.taskerClient.replaceAction(index, action)
         }
     })
@@ -294,6 +296,17 @@ app.whenReady().then(() => {
             await homeassistantClient.ping()
         }
     )
+
+    ipcMain.handle('tasker-list-variables', async () => {
+        if (Settings.taskerDataPromise) {
+            // Wait for the tasker data to be loaded before replacing the action
+            await Settings.taskerDataPromise
+        }
+        if (Settings.taskerClient) {
+            return await Settings.taskerClient.getVariables()
+        }
+        return []
+    })
 
     ipcMain.handle('tasker-force-reload', async () => {
         if (Settings.taskerDataPromise) {

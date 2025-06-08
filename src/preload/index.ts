@@ -11,6 +11,7 @@ import { HomeassistantStatus } from '../main/clients/homeassistant/enums/Homeass
 import { ActualService } from '../main/clients/homeassistant/types/ActualService'
 import { HomeassistantSettings } from '../main/settings/types/HomeassistantSettings'
 import { GeneralSettings } from '../main/settings/types/GeneralSettings'
+import { Variable } from '../main/clients/tasker/types/Variable'
 
 declare global {
     interface Window {
@@ -75,6 +76,8 @@ const api = {
             errorStatus: TaskerErrorStatus
             clientActivityStatus: TaskerClientActivityStatus
         }>,
+    taskerListVariables: () =>
+        electronAPI.ipcRenderer.invoke('tasker-list-variables') as Promise<Variable[]>,
     taskerListActions: () =>
         electronAPI.ipcRenderer.invoke('tasker-list-actions') as Promise<Action[]>,
     taskerListActionSpecs: () =>

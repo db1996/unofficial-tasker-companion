@@ -138,12 +138,27 @@ export default class HomeassistantAction extends BaseActionType {
     submitSettingsForm(): boolean {
         super.submitSettingsForm()
         this.params.timeout = this.currentSettingsFormObject['timeout'] as number
+        if (this.params.timeout === undefined || this.params.timeout < 0) {
+            this.params.timeout = 5
+        }
         this.params.trust_any_certificate = this.currentSettingsFormObject[
             'trust_any_certificate'
         ] as boolean
+        if (this.params.trust_any_certificate === undefined) {
+            this.params.trust_any_certificate = false
+        }
         this.params.follow_redirects = this.currentSettingsFormObject['follow_redirects'] as boolean
+        if (this.params.follow_redirects === undefined) {
+            this.params.follow_redirects = true
+        }
         this.params.use_cookies = this.currentSettingsFormObject['use_cookies'] as boolean
+        if (this.params.use_cookies === undefined) {
+            this.params.use_cookies = true
+        }
         this.params.structure_output = this.currentSettingsFormObject['structure_output'] as boolean
+        if (this.params.structure_output === undefined) {
+            this.params.structure_output = true
+        }
 
         console.log('Updated parameters:', this.params)
         this.setArgs()
@@ -175,10 +190,19 @@ export default class HomeassistantAction extends BaseActionType {
     updateDataContainerValue(key: string, value: string): void {
         if (this.currentFormObject['dataContainer']) {
             if (!this.currentFormObject['dataContainer'][key]) {
-                this.currentFormObject['dataContainer'][key] = { toggle: false, value: '' }
+                this.currentFormObject['dataContainer'][key] = { toggle: true, value: value }
+                console.log(
+                    'Adding new dataContainer key:',
+                    key,
+                    'with value:',
+                    value,
+                    this.currentFormObject['dataContainer'][key]
+                )
+            } else {
+                this.currentFormObject['dataContainer'][key].value = value
             }
-            this.currentFormObject['dataContainer'][key].value = value
         }
+        console.log('Updated dataContainer:', this.currentFormObject['dataContainer'])
     }
 
     updateDataContainerToggle(key: string, toggle: boolean): void {
@@ -289,6 +313,9 @@ export default class HomeassistantAction extends BaseActionType {
 
     urlToServiceData(url: string, body: object | null = null): ServiceData {
         const urlServiceData = new ServiceData()
+        if (url === undefined || url === null || url === '') {
+            return urlServiceData
+        }
 
         if (
             !url.startsWith(this.settingsStore.settings.homeassistant.replace_url_var) &&

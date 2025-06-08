@@ -11,6 +11,8 @@ import { HomeassistantStatus } from '../enums/HomeassistantStatus'
 import TextInput from '../../../../renderer/src/components/form/TextInput.vue'
 import Checkbox from '../../../../renderer/src/components/form/Checkbox.vue'
 import PickEntityModal from './_partials/PickEntityModal.vue'
+import { HaServiceFieldType } from '../enums/HaServiceFieldType'
+import SelectInput from '../../../../renderer/src/components/form/SelectInput.vue'
 
 const homeassistantStore = useHomeassistantStore()
 const props = defineProps({
@@ -37,6 +39,16 @@ watch(
     () => props.modelValue,
     () => {
         recreateFormObject()
+    },
+    { immediate: true, deep: true }
+)
+
+watch(
+    () => props.actionForm,
+    () => {
+        if (props.actionForm) {
+            recreateFormObject(true)
+        }
     },
     { immediate: true, deep: true }
 )
@@ -125,7 +137,6 @@ async function servicePicked(
 
     if (service.fields && Object.keys(service.fields).length > 0) {
         // Initialize dataContainer with fields
-        console.log(service.fields)
         for (const field of Object.values(service.fields)) {
             dataContainer[field.id] = {
                 toggle: false,
@@ -215,40 +226,110 @@ const showServicePicker = ref(false)
                 </BaseButton>
             </div>
         </div>
+        <div class="row">
+            <div class="col-sm-2">
+                <label>Send data</label>
+            </div>
+            <div class="col-sm-10">
+                <label class="form-control-label">Value</label>
+            </div>
+        </div>
         <div v-for="(fieldState, id) in form.dataContainer" :key="id" class="row">
-            <div class="col-1 d-flex align-items-center pt-2">
+            <div class="col-2 d-flex align-items-center pt-2">
                 <Checkbox
                     id="extradata_{{ id }}_toggle"
                     name="extradata_{{ id }}_toggle"
                     :checked="fieldState.toggle"
                     switch-type
+                    :label="getFieldrefById(id)?.name"
                     @update:checked="modelValue?.updateDataContainerToggle(id, $event)"
                 />
             </div>
-            <div class="col-11">
+            <div class="col-10 pt-2">
                 <TextInput
-                    id="extradata_{{ id }}_value"
+                    v-if="
+                        getFieldrefById(id)?.type === HaServiceFieldType.TEXT ||
+                        getFieldrefById(id)?.type === HaServiceFieldType.NUMBER ||
+                        getFieldrefById(id)?.type === HaServiceFieldType.DATETIME ||
+                        getFieldrefById(id)?.type === HaServiceFieldType.DATE ||
+                        getFieldrefById(id)?.type === HaServiceFieldType.TIME
+                    "
+                    id="extradata_{{ field.id }}_value"
                     v-model="fieldState.value"
-                    :label="getFieldrefById(id)?.name"
+                    :type="getFieldrefById(id)?.type"
+                    :describe="
+                        getFieldrefById(id)?.type === HaServiceFieldType.NUMBER &&
+                        getFieldrefById(id)?.min &&
+                        getFieldrefById(id)?.max
+                            ? `min: ${getFieldrefById(id)?.min} max: ${getFieldrefById(id)?.max}`
+                            : ''
+                    "
                     @update:model-value="modelValue?.updateDataContainerValue(id, $event)"
+                />
+
+                <SelectInput
+                    v-else-if="getFieldrefById(id)?.type === HaServiceFieldType.SELECT"
+                    id="extradata_{{ field.id }}_value"
+                    :options="getFieldrefById(id)?.options || []"
+                    @update:model-value="modelValue?.updateDataContainerValue(id, $event)"
+                />
+
+                <Checkbox
+                    v-else-if="getFieldrefById(id)?.type === HaServiceFieldType.BOOLEAN"
+                    id="extradata_{{ id }}_toggle"
+                    name="extradata_{{ id }}_toggle"
+                    switch-type
+                    :checked="fieldState.value"
+                    @update:checked="modelValue?.updateDataContainerValue(id, $event)"
                 />
             </div>
         </div>
         <div v-for="(field, index) in fieldsRef" :key="index" class="row">
-            <div v-if="!form.dataContainer[field.id]" class="col-1 d-flex align-items-center pt-2">
+            <div v-if="!form.dataContainer[field.id]" class="col-2 d-flex align-items-center pt-2">
                 <Checkbox
                     id="extradata_{{ field.id }}_toggle"
                     name="extradata_{{ field.id }}_toggle"
                     :checked="false"
                     switch-type
+                    :label="field.name"
                     @update:checked="modelValue?.updateDataContainerToggle(field.id, $event)"
                 />
             </div>
-            <div v-if="!form.dataContainer[field.id]" class="col-11">
+            <div v-if="!form.dataContainer[field.id]" class="col-10 pt-2">
                 <TextInput
+                    v-if="
+                        field.type === HaServiceFieldType.TEXT ||
+                        field.type === HaServiceFieldType.NUMBER ||
+                        field.type === HaServiceFieldType.DATETIME ||
+                        field.type === HaServiceFieldType.DATE ||
+                        field.type === HaServiceFieldType.TIME
+                    "
                     id="extradata_{{ field.id }}_value"
+                    :type="field.type"
                     :label="getFieldrefById(field.id)?.name"
+                    :describe="
+                        field.type === HaServiceFieldType.NUMBER && field.min && field.max
+                            ? `min: ${field.min} max: ${field.max}`
+                            : ''
+                    "
                     @update:model-value="modelValue?.updateDataContainerValue(field.id, $event)"
+                />
+
+                <SelectInput
+                    v-else-if="field.type === HaServiceFieldType.SELECT"
+                    id="extradata_{{ field.id }}_value"
+                    :label="field.name"
+                    :options="field.options || []"
+                    @update:model-value="modelValue?.updateDataContainerValue(field.id, $event)"
+                />
+
+                <Checkbox
+                    v-else-if="field.type === HaServiceFieldType.BOOLEAN"
+                    id="extradata_{{ field.id }}_toggle"
+                    name="extradata_{{ field.id }}_toggle"
+                    :checked="false"
+                    switch-type
+                    @update:checked="modelValue?.updateDataContainerValue(field.id, $event)"
                 />
             </div>
         </div>

@@ -2,8 +2,16 @@
 import Sidebar from './_partials/sidebar.vue'
 import { useTaskerStore } from '../stores/tasker.store'
 import StatusBadge from '../components/StatusBadge.vue'
+import BaseButton from '../components/BaseButton.vue'
+import PickVariable from '../views/_partials/PickVariable.vue'
+import { onUnmounted, ref } from 'vue'
+import { useLastFocusInput } from '../stores/lastFocusInput.store'
+import useTooltipStore from '../stores/useTooltip'
 
+const tooltipStore = useTooltipStore()
 const taskerStore = useTaskerStore()
+const lastFocusInput = useLastFocusInput()
+const showPickVariable = ref(false)
 
 const props = defineProps({
     title: {
@@ -27,6 +35,15 @@ const props = defineProps({
         default: 'main'
     }
 })
+onUnmounted(() => {
+    showPickVariable.value = false
+    tooltipStore.destroyAllTooltips()
+})
+
+function pickedVariable(variable: string) {
+    showPickVariable.value = false
+    lastFocusInput.lastInput?.insertText(variable)
+}
 </script>
 <template>
     <header class="navbar bg-dark p-0 shadow" data-bs-theme="dark">
@@ -42,16 +59,27 @@ const props = defineProps({
                     :icon="taskerStore.taskerStatus.icon"
                     :spin="taskerStore.taskerStatus.spin"
                 />
+                <BaseButton
+                    class="btn btn-secondary"
+                    sm
+                    icon-left="refresh"
+                    @click="taskerStore.forceReloadTasker()"
+                />
+                <BaseButton
+                    v-tooltip
+                    data-title="Pick a variable"
+                    class="btn btn-primary ms-4"
+                    sm
+                    icon-left="tag-plus"
+                    @click="showPickVariable = true"
+                />
             </div>
         </div>
     </header>
-
     <div class="container-fluid ps-0">
-        <div class="d-flex">
-            <div>
-                <Sidebar />
-            </div>
-            <main class="w-100">
+        <div class="d-flex" style="min-height: calc(100vh - 58px)">
+            <Sidebar />
+            <main style="flex: 2">
                 <div class="ps-2 pt-2">
                     <div
                         class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom"
@@ -65,8 +93,11 @@ const props = defineProps({
                 </div>
             </main>
         </div>
-        <!-- <div class="draggingoverlay" :class="{ 'd-none': !isDraggingOver }">
-            <MdiIcon icon="plus-circle-outline" />
-        </div> -->
     </div>
+
+    <PickVariable
+        v-if="showPickVariable"
+        @picked="pickedVariable"
+        @close="showPickVariable = false"
+    />
 </template>

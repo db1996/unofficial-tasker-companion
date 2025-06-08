@@ -1,11 +1,9 @@
+import { Tooltip } from 'bootstrap'
+import { debounce } from 'lodash'
 import { defineStore } from 'pinia'
-
 interface HTMLElement {
     _tooltipObserver?: MutationObserver
 }
-import { Tooltip } from 'bootstrap'
-
-import { debounce } from 'lodash'
 
 const useTooltipStore = defineStore('tooltips', {
     state: () => ({
@@ -24,6 +22,11 @@ const useTooltipStore = defineStore('tooltips', {
                 tooltipInstance.dispose()
                 this.tooltipElements = this.tooltipElements.filter((tooltip) => tooltip !== el)
             }
+        },
+        destroyAllTooltips() {
+            this.tooltipElements.forEach((tooltipEl) => {
+                this.destroyToolTip(tooltipEl)
+            })
         }
     }
 })
