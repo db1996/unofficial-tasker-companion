@@ -13,7 +13,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "dev": "npm install --no-save sass-embedded-win32-x64 && npm install --no-save @rollup/rollup-win32-x64-msvc && electron-vite dev",
-    "dev:no-win": "electron-vite dev --no-win",
+    "dev:no-win": "electron-vite dev",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",

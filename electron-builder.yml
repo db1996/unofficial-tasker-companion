@@ -1,5 +1,5 @@
 appId: com.unofficial-tasker-companion
-productName: Unofficial Tasker Companion
+productName: UnofficialTaskerCompanion
 directories:
   buildResources: build
 files:
