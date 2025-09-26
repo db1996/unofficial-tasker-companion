@@ -313,25 +313,31 @@ export default class HomeassistantAction extends BaseActionType {
 
     urlToServiceData(url: string, body: object | null = null): ServiceData {
         const urlServiceData = new ServiceData()
-        if (url === undefined || url === null || url === '') {
+
+        // Convert url to string in case it's passed as a number or other type
+        const urlString = String(url || '')
+
+        if (urlString === 'undefined' || urlString === 'null' || urlString === '' || urlString === '0') {
             return urlServiceData
         }
 
+        console.log('Parsing URL to ServiceData:', urlString, body)
+
+        const replaceUrlVar = this.settingsStore.settings.homeassistant.replace_url_var || ''
+        const homeassistantUrl = this.settingsStore.settings.homeassistant.url || ''
+
         if (
-            !url.startsWith(this.settingsStore.settings.homeassistant.replace_url_var) &&
-            !url.startsWith(this.settingsStore.settings.homeassistant.url)
+            !urlString.startsWith(replaceUrlVar) &&
+            !urlString.startsWith(homeassistantUrl)
         ) {
             return urlServiceData
         }
 
-        url.replace(
-            this.settingsStore.settings.homeassistant.replace_url_var,
-            this.settingsStore.settings.homeassistant.url
-        )
+        let processedUrl = urlString.replace(replaceUrlVar, homeassistantUrl)
 
-        url = url.replace('http://', '').replace('https://', '')
+        processedUrl = processedUrl.replace('http://', '').replace('https://', '')
 
-        const urlParts = url.split('/')
+        const urlParts = processedUrl.split('/')
         urlServiceData.baseUrl = urlParts[0]
 
         if (urlParts.length >= 3) {

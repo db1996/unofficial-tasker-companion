@@ -37,7 +37,7 @@ async function newTaskPicked(card: ActionSpecCard) {
 </script>
 
 <template>
-    <appLayout title="Home">
+    <appLayout title="Edit task">
         <template #toolbar>
             <BaseButton class="btn btn-primary" sm @click="showNewTask = true">
                 <MdiIcon icon="plus" />

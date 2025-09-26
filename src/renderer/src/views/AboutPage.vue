@@ -1,28 +1,26 @@
 <script setup lang="ts">
 import AppLayout from '@renderer/layouts/app.layout.vue'
-
-const ipcHandle = () => window.electron.ipcRenderer.send('ping')
 </script>
 
 <template>
     <AppLayout title="About">
-        <div class="creator">Powered by electron-vite</div>
         <div class="text">
-            ABOUT
-            <span class="vue">Vue</span>
-            and
-            <span class="ts">TypeScript</span>
+            This is an unofficial Tasker companion app to manage a task from your PC!
+            <br />
+            It has a full integration for Home assistant, allowing you to easily create tasks that trigger things in home assistant.
+            <br />
+            <br />
+            Built with ❤️, open source, and free to use.
         </div>
-        <p class="tip">Please try pressing <code>F12</code> to open the devTool</p>
         <div class="actions">
             <div class="action">
-                <a href="https://electron-vite.org/" target="_blank" rel="noreferrer"
-                    >Documentation</a
+                <a href="https://github.com/db1996/unofficial-tasker-companion" target="_blank" rel="noreferrer">
+                  Check the code, and releases here</a
                 >
             </div>
-            <div class="action">
-                <a target="_blank" rel="noreferrer" @click="ipcHandle">Send IPC</a>
-            </div>
         </div>
+        <br>
+        <div class="creator">Created by db1996</div>
+        <div>Current release: 2025.06.2</div>
     </AppLayout>
 </template>
